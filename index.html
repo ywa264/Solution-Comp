@@ -223,8 +223,48 @@ footer .brand{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(-
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;} .reveal{transition:none;}}
 @media (max-width:640px){section{padding:64px 0;} .wrap{padding:0 20px;} .navtop{flex-direction:column; align-items:flex-start;}}
 </style>
+<style id="dm-style">
+  .dm-overlay{position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:rgba(34,40,46,.55); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); transition:opacity .3s ease;}
+  .dm-overlay[hidden]{display:none;}
+  .dm-card{position:relative; width:100%; max-width:560px; background:var(--white); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg); padding:30px 30px 26px; overflow:hidden; animation:dmIn .38s cubic-bezier(.2,.7,.2,1);}
+  .dm-card::before{content:""; position:absolute; top:0; left:0; right:0; height:4px; background:var(--gold);}
+  @keyframes dmIn{from{opacity:0; transform:translateY(14px) scale(.985);} to{opacity:1; transform:none;}}
+  .dm-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-700); margin-bottom:10px;}
+  .dm-title{font-size:20px; font-weight:750; color:var(--ink); margin:0 0 12px; letter-spacing:-.01em;}
+  .dm-body{font-size:13.5px; line-height:1.75; color:var(--gray-70); margin:0 0 22px;}
+  .dm-actions{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .dm-lt{display:inline-flex; gap:2px; padding:3px; background:var(--gray-08); border-radius:999px;}
+  .dm-lt .lt-btn{border:0; background:transparent; color:var(--gray-70); font:inherit; font-weight:650; font-size:12px; padding:5px 13px; border-radius:999px; cursor:pointer;}
+  .dm-lt .lt-btn.active{background:var(--white); color:var(--ink); box-shadow:0 1px 3px rgba(34,40,46,.14);}
+  .dm-btn{border:0; background:var(--ink); color:#fff; font:inherit; font-weight:700; font-size:13.5px; padding:11px 22px; border-radius:var(--radius-sm); cursor:pointer; transition:background .2s, transform .1s;}
+  .dm-btn:hover{background:#000;}
+  .dm-btn:active{transform:translateY(1px);}
+  .dm-btn:focus-visible, .dm-lt .lt-btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  @media (max-width:520px){.dm-card{padding:24px 20px;} .dm-actions{justify-content:stretch;} .dm-btn{flex:1;}}
+  @media (prefers-reduced-motion:reduce){.dm-card{animation:none;} .dm-overlay{transition:none;}}
+</style>
 </head>
 <body class="vendor-mindray">
+<!-- ============ DISCLAIMER MODAL (shown on page load) ============ -->
+<div id="disclaimer-modal" class="dm-overlay" role="dialog" aria-modal="true" aria-labelledby="dm-title" aria-describedby="dm-body">
+  <div class="dm-card">
+    <div class="dm-eyebrow"><span class="lang-zh">免责声明</span><span class="lang-en" hidden>Disclaimer</span></div>
+    <h2 id="dm-title" class="dm-title"><span class="lang-zh">信息来源说明</span><span class="lang-en" hidden>Information Sources</span></h2>
+    <p id="dm-body" class="dm-body"><span class="lang-zh">本页所有信息均整合自公开可得的来源——包括各厂商的官方产品页面、手册、财务披露及已发布的案例研究——并在公开信息有限之处辅以合理推断。未使用任何保密、专有或非公开信息。本页内容未获迈瑞或Philips背书，亦与其无隶属关系；如需权威的规格、能力与部署细节，请以各厂商最新官方材料为准。本页仅供内部竞争理解与产品规划参考之用。</span><span class="lang-en" hidden>All information presented on this page is compiled from publicly available sources — including each vendor's official product pages, manuals, financial disclosures, and published case studies — together with reasonable inference where public detail is limited. No confidential, proprietary, or non-public information is used. Content is not endorsed by or affiliated with Mindray or Philips; for authoritative specifications, capabilities, and deployment details, refer to each vendor's latest official materials. This page is intended for internal competitive understanding and product-planning reference only.</span></p>
+    <div class="dm-actions">
+      <div class="dm-lt" role="group" aria-label="language">
+        <button type="button" class="lt-btn active" data-lang="zh">中文</button>
+        <button type="button" class="lt-btn" data-lang="en">EN</button>
+      </div>
+      <button type="button" class="dm-btn" id="dm-close" onclick="var m=document.getElementById('disclaimer-modal');m.setAttribute('hidden','');document.documentElement.style.overflow='';">
+        <span class="lang-zh">我已了解，继续</span><span class="lang-en" hidden>I understand — continue</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <div id="rail"><div id="rail-fill"></div></div>
 
@@ -827,6 +867,8 @@ footer .brand{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(-
     <div class="disclaim lang-en" hidden>
       Note: this page is an illustrative visualization compiled from public materials. The diagrams, timelines, and comparison tables are synthesized presentations, not official charts published by Mindray or Philips; refer to each vendor's latest official materials or a product demo for specific capabilities, interface specifications, and deployment details. Customer case data comes from vendor materials, and Philips notes that "results may vary by institution." This page is for internal competitive understanding and product-planning reference only.
     </div>
+    <div class="disclaim lang-zh">信息来源：本页所有信息均整合自公开可得的来源——包括各厂商的官方产品页面、手册、财务披露及已发布的案例研究——并在公开信息有限之处辅以合理推断。未使用任何保密、专有或非公开信息。本页内容未获迈瑞或Philips背书，亦与其无隶属关系；如需权威的规格、能力与部署细节，请以各厂商最新官方材料为准。本页仅供内部竞争理解与产品规划参考之用。</div>
+    <div class="disclaim lang-en" hidden>Information sources: All information presented on this page is compiled from publicly available sources — including each vendor's official product pages, manuals, financial disclosures, and published case studies — together with reasonable inference where public detail is limited. No confidential, proprietary, or non-public information is used. Content is not endorsed by or affiliated with Mindray or Philips; for authoritative specifications, capabilities, and deployment details, refer to each vendor's latest official materials. This page is intended for internal competitive understanding and product-planning reference only.</div>
     <div class="theme-note lang-zh">视觉主题：瑞智联红取自Mindray Brand Book V1.2（Pantone 187C / #C7000B）；Philips蓝取自Philips品牌识别指南（Pantone 300C / #0B5ED7），经多方品牌色档案交叉核实；中性灰阶为设计延伸配色，非厂商官方发布数值；页面配色随上方切换按钮动态改变强调色。</div>
     <div class="theme-note lang-en" hidden>Visual theme: the M-Connect red is taken from the Mindray Brand Book V1.2 (Pantone 187C / #C7000B); the Philips blue is taken from Philips' brand identity guide (Pantone 300C / #0B5ED7), cross-checked against multiple brand-color archives. Neutral grays are a designer-extended palette, not official published values. The page's accent color changes dynamically with the toggle above.</div>
     <div class="brand mono">M-CONNECT × CONNECTED CARE · SOLUTION ARCHITECTURE COMPARISON · INTERNAL REFERENCE</div>
@@ -1303,6 +1345,34 @@ buildCardGrid('deploy-grid-philips', [
       newReveals.forEach(function(el2){ el2.classList.add('in'); });
     }
   }
+})();
+</script>
+<script>
+(function(){
+  var modal = document.getElementById('disclaimer-modal');
+  if(!modal) return;
+  var closeBtn = document.getElementById('dm-close');
+  try{ document.documentElement.style.overflow = 'hidden'; }catch(e){}
+  function closeModal(){
+    modal.setAttribute('hidden','');
+    try{ document.documentElement.style.overflow = ''; }catch(e){}
+    document.removeEventListener('keydown', onKey);
+    try{ var n=document.querySelector('#navrow a'); if(n) n.focus(); }catch(e){}
+  }
+  function onKey(e){
+    if(e.key === 'Escape'){ closeModal(); return; }
+    if(e.key === 'Tab'){
+      var f = modal.querySelectorAll('button');
+      if(!f.length) return;
+      var first = f[0], last = f[f.length-1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  }
+  modal.addEventListener('click', function(e){ if(e.target === modal){ closeModal(); } });
+  if(closeBtn){ closeBtn.addEventListener('click', closeModal); }
+  document.addEventListener('keydown', onKey);
+  try{ if(closeBtn){ closeBtn.focus(); } }catch(e){}
 })();
 </script>
 </body>
