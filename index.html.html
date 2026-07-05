@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瑞智联 M-Connect · Philips Connected Care · 架构对照总览 / Architecture Comparison</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --red:#c7000b; --red-700:#960008; --red-50:#fdedee; --red-100:#f8d2d4;
+  --blue:#0b5ed7; --blue-700:#073c8c; --blue-50:#eaf1fd; --blue-100:#cfe0fa;
+  --gold:#b9790a; --gold-700:#8f5c06; --gold-50:#fbf1e0; --gold-100:#f2ddb0;
+  --ink:#22282e; --gray-70:#5c6672; --gray-40:#a7afb8; --gray-20:#dde1e5; --gray-08:#f5f6f7;
+  --white:#ffffff; --radius-lg:10px; --radius-sm:6px; --maxw:1180px;
+  --shadow:0 2px 18px rgba(34,40,46,.07); --shadow-lg:0 8px 26px rgba(34,40,46,.12);
+}
+body.vendor-mindray{ --accent:var(--red); --accent-700:var(--red-700); --accent-50:var(--red-50); --accent-100:var(--red-100); }
+body.vendor-philips{ --accent:var(--blue); --accent-700:var(--blue-700); --accent-50:var(--blue-50); --accent-100:var(--blue-100); }
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+[hidden]{display:none !important;}
+body{margin:0; background:var(--white); color:var(--ink); font-family:'Noto Sans SC', Arial, 'Helvetica Neue', sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; transition:background .3s;}
+.mono{font-family:'IBM Plex Mono', monospace;}
+::selection{background:var(--accent-100); color:var(--accent-700);}
+
+#rail{position:fixed; left:0; top:0; bottom:0; width:3px; background:var(--gray-20); z-index:80;}
+#rail-fill{position:absolute; left:0; top:0; width:100%; height:0%; background:linear-gradient(180deg, var(--accent), var(--accent-700)); transition:height .05s linear, background .3s;}
+
+#quicknav{position:sticky; top:0; z-index:70; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-bottom:1px solid var(--gray-20);}
+.navtop{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:var(--maxw); margin:0 auto; padding:10px 28px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+.navrow{display:flex; gap:2px; white-space:nowrap;}
+.navrow a{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gray-70); text-decoration:none; padding:7px 10px; border-radius:99px; transition:color .2s, background .2s;}
+.navrow a:hover{color:var(--accent);}
+.navrow a.active{color:var(--accent); background:var(--accent-50); font-weight:600;}
+.navtoggles{display:flex; align-items:center; gap:8px; flex:0 0 auto;}
+
+.vt{display:flex; gap:3px; background:var(--gray-08); border:1px solid var(--gray-20); border-radius:99px; padding:3px; flex:0 0 auto;}
+.vt-btn{font-family:'IBM Plex Mono',monospace; font-size:11px; border:none; background:transparent; color:var(--gray-70); padding:7px 13px; border-radius:99px; cursor:pointer; transition:all .25s; white-space:nowrap;}
+.vt-btn.active[data-vendor="mindray"]{background:var(--red); color:#fff;}
+.vt-btn.active[data-vendor="philips"]{background:var(--blue); color:#fff;}
+.vt-lg{transform:scale(1.14); margin:30px 0 6px;}
+
+.lt{display:flex; gap:3px; background:var(--gray-08); border:1px solid var(--gray-20); border-radius:99px; padding:3px; flex:0 0 auto;}
+.lt-btn{font-family:'IBM Plex Mono',monospace; font-size:11px; border:none; background:transparent; color:var(--gray-70); padding:7px 13px; border-radius:99px; cursor:pointer; transition:all .25s; white-space:nowrap;}
+.lt-btn.active{background:var(--ink); color:#fff;}
+.lt-lg{transform:scale(1.14); margin:30px 0 6px;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 28px;}
+section{position:relative; padding:92px 0; scroll-margin-top:60px;}
+.alt-bg{background:var(--gray-08);}
+.eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 16px; display:flex; align-items:center; gap:10px; transition:color .3s;}
+.eyebrow::before{content:""; width:20px; height:2px; background:var(--accent); display:inline-block; transition:background .3s;}
+.eyebrow.neutral, .eyebrow.neutral::before{color:var(--ink); background:var(--ink);}
+h1,h2,h3{margin:0; font-weight:900; letter-spacing:-.01em; color:var(--ink);}
+h2{font-size:clamp(23px,3.1vw,33px); line-height:1.3;}
+p{color:var(--gray-70); line-height:1.85; font-size:15px;}
+.lede{font-size:15.5px; color:var(--gray-70); max-width:740px; line-height:1.9;}
+strong.hl{font-style:normal; font-weight:900; color:var(--red);}
+strong.hl2{font-style:normal; font-weight:900; color:var(--blue);}
+
+.reveal{opacity:0; transform:translateY(22px); transition:opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1);}
+.reveal.in{opacity:1; transform:translateY(0);}
+
+#hero{padding:88px 0 56px;}
+.hero-tag{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.16em; color:var(--gray-70); text-transform:uppercase; margin-bottom:20px;}
+#hero h1{font-size:clamp(27px,4vw,44px); line-height:1.28; max-width:860px;}
+#hero .lede{margin-top:20px;}
+.hero-compare{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:40px;}
+@media (max-width:700px){.hero-compare{grid-template-columns:1fr;}}
+.hero-card{border:1px solid var(--gray-20); border-radius:var(--radius-lg); padding:20px 22px;}
+.hero-card.hc-red{border-top:3px solid var(--red);}
+.hero-card.hc-blue{border-top:3px solid var(--blue);}
+.hero-card .hc-name{font-weight:700; font-size:15px; color:var(--ink);}
+.hero-card .hc-stats{display:flex; gap:22px; margin-top:14px; flex-wrap:wrap;}
+.hero-card .hc-stats div{min-width:80px;}
+.hero-card .hc-num{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600;}
+.hc-red .hc-num{color:var(--red);}
+.hc-blue .hc-num{color:var(--blue);}
+.hero-card .hc-lbl{font-size:11px; color:var(--gray-70); margin-top:3px; line-height:1.5;}
+
+.toggle-prompt{margin-top:30px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+.toggle-prompt span{font-size:13px; color:var(--gray-70);}
+
+.divider{border-top:1px solid var(--gray-20);}
+
+.vendor-block{display:none;}
+.vendor-block.vb-active{display:block;}
+
+.chiprow{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px;}
+.chip{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gray-70); border:1px solid var(--gray-20); border-radius:var(--radius-sm); padding:7px 13px; background:var(--white);}
+.chip b{color:var(--accent-700); font-weight:600;}
+.chip-static{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gray-70); border:1px solid var(--gray-20); border-radius:99px; padding:5px 12px; margin:0 6px 8px 0; background:var(--white);}
+
+.frame{margin-top:44px; background:var(--white); border:1px solid var(--gray-20); border-radius:var(--radius-lg); padding:32px 28px 24px; overflow-x:auto; -webkit-overflow-scrolling:touch; box-shadow:var(--shadow);}
+.diagram-scale{min-width:980px;}
+.diagram-wrap{position:relative; width:100%; aspect-ratio:1200/620;}
+.diagram-wrap svg{position:absolute; inset:0; width:100%; height:100%;}
+.node{position:absolute; transform:translate(-50%,-50%); border-radius:var(--radius-sm); padding:10px 13px; text-align:left; background:var(--white); border:1px solid var(--gray-20); box-shadow:var(--shadow);}
+.node .tag{font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.07em; color:var(--gray-40);}
+.node .nm{font-size:12.5px; font-weight:700; color:var(--ink); margin-top:3px; white-space:nowrap;}
+.node .sm{font-size:10.5px; color:var(--gray-70); margin-top:2px; line-height:1.5; max-width:160px;}
+.node.device{width:150px; border-top:3px solid var(--gray-40);}
+.node.hub{width:154px;}
+.node.platform{width:164px; border-top:3px solid var(--ink);}
+.node.branch{width:154px; opacity:.95;}
+.legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:22px; padding-top:16px; border-top:1px solid var(--gray-20);}
+.legend-item{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--gray-70);}
+.swatch{width:12px; height:4px; border-radius:2px; flex:0 0 auto;}
+
+.twocol{display:grid; grid-template-columns:1.15fr .85fr; gap:50px; align-items:start; margin-top:40px;}
+@media (max-width:880px){.twocol{grid-template-columns:1fr;}}
+.threecol{display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:40px;}
+@media (max-width:880px){.threecol{grid-template-columns:1fr;}}
+.threecol h3, .twocol h3{font-size:16.5px; margin-bottom:10px;}
+.threecol p{font-size:13.5px;}
+
+.case-list{display:flex; flex-direction:column; gap:11px; margin-top:8px;}
+.case-item{padding:11px 14px; border-left:2px solid var(--accent); background:var(--white); border-radius:0 8px 8px 0; border-top:1px solid var(--gray-20); border-bottom:1px solid var(--gray-20); border-right:1px solid var(--gray-20);}
+.case-item b{color:var(--ink); font-size:13px;}
+.case-item span{display:block; font-size:12px; color:var(--gray-70); margin-top:3px; line-height:1.6;}
+
+.tblwrap{overflow-x:auto; margin-top:20px; -webkit-overflow-scrolling:touch;}
+.cmp-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px;}
+.cmp-table th{background:var(--ink); color:#fff; text-align:left; padding:11px 14px; font-weight:700; font-size:11.5px;}
+.cmp-table th.th-red{background:var(--red);}
+.cmp-table th.th-blue{background:var(--blue);}
+.cmp-table td{padding:11px 14px; border-bottom:1px solid var(--gray-20); color:var(--gray-70); vertical-align:top; line-height:1.65;}
+.cmp-table tr:nth-child(even) td{background:var(--gray-08);}
+.cmp-table td:first-child{color:var(--ink); font-weight:600;}
+
+.tabs{display:flex; gap:8px; flex-wrap:wrap; margin-top:34px;}
+.tab-btn{font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--gray-70); background:var(--white); border:1px solid var(--gray-20); border-radius:99px; padding:9px 18px; cursor:pointer; transition:all .25s;}
+.tab-btn:hover{border-color:var(--accent);}
+.tab-btn.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+.timeline{position:relative; overflow-x:auto; padding-bottom:16px; -webkit-overflow-scrolling:touch; margin-top:28px;}
+.timeline-track{display:flex; gap:0; min-width:920px; position:relative; padding-top:10px;}
+.tl-line{position:absolute; top:23px; left:0; right:0; height:2px; background:var(--gray-20); z-index:0;}
+.tl-line-fill{position:absolute; top:0; left:0; height:100%; width:0%; background:var(--accent); transition:width 1.1s cubic-bezier(.2,.7,.2,1);}
+.tl-step{flex:1; position:relative; padding:0 10px;}
+.tl-dot{position:relative; z-index:1; width:44px; height:44px; border-radius:50%; background:var(--white); border:2px solid var(--gray-20); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:13.5px; font-weight:700; color:var(--gray-40); margin:0 auto; transition:all .5s ease;}
+.tl-step.on .tl-dot{border-color:var(--accent); color:var(--accent); background:var(--accent-50);}
+.tl-body{margin-top:15px; text-align:center; padding:0 4px;}
+.tl-body .t{font-size:13px; font-weight:700; color:var(--ink);}
+.tl-body .d{font-size:11.5px; color:var(--gray-70); margin-top:5px; line-height:1.6;}
+
+.vgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+@media (max-width:880px){.vgrid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.vgrid{grid-template-columns:1fr;}}
+.vcard{background:var(--white); border:1px solid var(--gray-20); border-radius:var(--radius-lg); padding:20px 18px; transition:transform .3s, border-color .3s, box-shadow .3s; border-top:3px solid var(--gray-20);}
+.vcard:hover{transform:translateY(-4px); border-top-color:var(--accent); box-shadow:var(--shadow);}
+.vcard .role{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--accent); letter-spacing:.08em;}
+.vcard .name{font-size:15px; font-weight:700; color:var(--ink); margin-top:7px;}
+.vcard .desc{font-size:12.5px; color:var(--gray-70); margin-top:9px; line-height:1.7;}
+
+.grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:13px;}
+@media (max-width:920px){.grid4{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){.grid4{grid-template-columns:1fr;}}
+.icard{background:var(--white); border:1px solid var(--gray-20); border-radius:var(--radius-lg); padding:16px; border-top:3px solid var(--gray-20); transition:border-color .3s, transform .3s;}
+.icard:hover{border-top-color:var(--accent); transform:translateY(-3px);}
+.icard .name{font-size:13.5px; font-weight:700; color:var(--ink);}
+.icard .desc{font-size:12px; color:var(--gray-70); margin-top:7px; line-height:1.7;}
+
+.ladder-method{margin-top:22px; padding:14px 16px; background:var(--gray-08); border-left:3px solid var(--gray-40); border-radius:0 8px 8px 0; font-size:12.5px; color:var(--gray-70); line-height:1.8; max-width:820px;}
+.ladder-legend{display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:24px;}
+.ladder-legend-item{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--gray-70);}
+.ladder-ldot{width:11px; height:11px; border-radius:50%; flex:0 0 auto;}
+.ladder-ldot.red{background:var(--red);} .ladder-ldot.blue{background:var(--blue);} .ladder-ldot.gold{background:var(--gold);} .ladder-ldot.tie{background:var(--gray-40);}
+.ladder-scorecard{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:28px; max-width:820px;}
+@media (max-width:640px){.ladder-scorecard{grid-template-columns:repeat(2,1fr);}}
+.lsc-item{border:1px solid var(--gray-20); border-radius:var(--radius-sm); padding:14px 12px; text-align:center; background:var(--white);}
+.lsc-num{font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:700;}
+.lsc-item.lsc-blue .lsc-num{color:var(--blue);} .lsc-item.lsc-red .lsc-num{color:var(--red);}
+.lsc-item.lsc-gold .lsc-num{color:var(--gold);} .lsc-item.lsc-tie .lsc-num{color:var(--gray-70);}
+.lsc-lbl{font-size:11px; color:var(--gray-70); margin-top:4px; line-height:1.5;}
+
+.ladder-journey{position:relative; padding:48px 0 8px;}
+.ladder-spine{position:absolute; left:20px; top:0; bottom:0; width:2px; background:var(--gray-20);}
+@media (min-width:760px){ .ladder-spine{left:50%; margin-left:-1px;} }
+.ladder-step{position:relative; padding:0 0 56px;}
+.ladder-step:last-child{padding-bottom:0;}
+.ladder-step-marker{position:relative; display:flex; align-items:center; gap:14px;}
+@media (min-width:760px){ .ladder-step-marker{justify-content:center;} }
+.ladder-step-dot{width:38px; height:38px; border-radius:50%; background:var(--white); border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink); flex:0 0 auto; position:relative; z-index:2;}
+.ladder-step-title-row{flex:1;}
+@media (min-width:760px){ .ladder-step-title-row{position:absolute; left:50%; margin-left:30px; width:calc(50% - 30px); text-align:left;} }
+.ladder-step-title-row h4{margin:0; font-size:16.5px; font-weight:800; color:var(--ink);}
+.ladder-step-clinical{margin:4px 0 0; font-size:12.5px; color:var(--gray-70); line-height:1.7;}
+.ladder-verdict-row{display:flex; justify-content:center; margin:16px 0 18px;}
+.ladder-verdict{font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; letter-spacing:.03em; padding:6px 16px; border-radius:99px; display:inline-flex; align-items:center; gap:7px;}
+.ladder-verdict::before{content:""; width:8px; height:8px; border-radius:50%;}
+.ladder-verdict.lv-blue{background:var(--blue-50); color:var(--blue-700);} .ladder-verdict.lv-blue::before{background:var(--blue);}
+.ladder-verdict.lv-red{background:var(--red-50); color:var(--red-700);} .ladder-verdict.lv-red::before{background:var(--red);}
+.ladder-verdict.lv-gold{background:var(--gold-50); color:var(--gold-700);} .ladder-verdict.lv-gold::before{background:var(--gold);}
+.ladder-verdict.lv-tie{background:var(--gray-08); color:var(--gray-70);} .ladder-verdict.lv-tie::before{background:var(--gray-40);}
+.ladder-compare-row{display:grid; grid-template-columns:1fr; gap:14px;}
+@media (min-width:760px){ .ladder-compare-row{grid-template-columns:1fr 1fr; gap:20px;} }
+.ladder-vpanel{border-radius:var(--radius-lg); padding:17px 18px; border:1px solid var(--gray-20); background:var(--white); transition:transform .3s, box-shadow .3s;}
+.ladder-vpanel.lvp-red{border-top:4px solid var(--red-100);}
+.ladder-vpanel.lvp-blue{border-top:4px solid var(--blue-100);}
+.ladder-vpanel.lvp-lead-red{border-top:4px solid var(--red); box-shadow:var(--shadow-lg); transform:translateY(-2px);}
+.ladder-vpanel.lvp-lead-blue{border-top:4px solid var(--blue); box-shadow:var(--shadow-lg); transform:translateY(-2px);}
+.ladder-vpanel.lvp-muted{opacity:.72;}
+.ladder-vpanel.lvp-gap{border:1px dashed var(--gray-40); border-top:4px dashed var(--gray-40); background:var(--gray-08);}
+.ladder-vpanel.lvp-exclusive{border-top:4px solid var(--gold); box-shadow:var(--shadow-lg); transform:translateY(-2px); background:linear-gradient(180deg, var(--gold-50), #fff 60%);}
+.ladder-vp-tag{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; color:var(--gray-70); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.ladder-vp-badge{font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:3px 8px; border-radius:99px; white-space:nowrap; font-weight:600;}
+.ladder-vp-badge.lb-red{background:var(--red); color:#fff;}
+.ladder-vp-badge.lb-blue{background:var(--blue); color:#fff;}
+.ladder-vp-badge.lb-gold{background:var(--gold); color:#fff;}
+.ladder-vpanel p{margin:0; font-size:12.8px; color:var(--ink); line-height:1.75;}
+.ladder-vpanel.lvp-muted p{color:var(--gray-70);}
+.ladder-vpanel.lvp-gap .lgap-text{font-size:12.3px; color:var(--gray-70); font-style:italic;}
+
+footer{padding:56px 0 52px; border-top:1px solid var(--gray-20); background:var(--gray-08);}
+footer .src{font-size:12px; color:var(--gray-70); line-height:2; max-width:860px;}
+footer .disclaim{margin-top:20px; padding:15px 18px; border:1px dashed var(--gray-40); border-radius:var(--radius-sm); font-size:12.5px; color:var(--gray-70); line-height:1.8; max-width:860px; background:var(--white);}
+footer .theme-note{margin-top:16px; font-size:11.5px; color:var(--gray-40); font-family:'IBM Plex Mono',monospace; line-height:1.9;}
+footer .brand{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gray-40); margin-top:26px;}
+
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;} .reveal{transition:none;}}
+@media (max-width:640px){section{padding:64px 0;} .wrap{padding:0 20px;} .navtop{flex-direction:column; align-items:flex-start;}}
+</style>
+</head>
+<body class="vendor-mindray">
+
+<div id="rail"><div id="rail-fill"></div></div>
+
+<nav id="quicknav">
+  <div class="navtop">
+    <div class="navrow" id="navrow">
+      <a href="#exec"><span class="lang-zh">00 摘要</span><span class="lang-en" hidden>00 Summary</span></a>
+      <a href="#arch"><span class="lang-zh">01 架构</span><span class="lang-en" hidden>01 Architecture</span></a>
+      <a href="#components"><span class="lang-zh">02 组件</span><span class="lang-en" hidden>02 Components</span></a>
+      <a href="#workflow"><span class="lang-zh">03 工作流</span><span class="lang-en" hidden>03 Workflow</span></a>
+      <a href="#ladder"><span class="lang-zh">04 全流程对照</span><span class="lang-en" hidden>04 Journey</span></a>
+      <a href="#applications"><span class="lang-zh">05 应用能力</span><span class="lang-en" hidden>05 Applications</span></a>
+      <a href="#deployment"><span class="lang-zh">06 部署</span><span class="lang-en" hidden>06 Deployment</span></a>
+      <a href="#value"><span class="lang-zh">07 角色价值</span><span class="lang-en" hidden>07 Value</span></a>
+      <a href="#compare"><span class="lang-zh">08 对照</span><span class="lang-en" hidden>08 Compare</span></a>
+      <a href="#appendix"><span class="lang-zh">09 附录</span><span class="lang-en" hidden>09 Appendix</span></a>
+    </div>
+    <div class="navtoggles">
+      <div class="vt" data-vt-group>
+        <button class="vt-btn active" data-vendor="mindray">M-Connect</button>
+        <button class="vt-btn" data-vendor="philips">Philips</button>
+      </div>
+      <div class="lt" data-lt-group>
+        <button class="lt-btn active" data-lang="zh">中文</button>
+        <button class="lt-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-tag">
+      <span class="lang-zh">Solution Architecture · 双厂商架构对照 · 内部参考</span>
+      <span class="lang-en" hidden>Solution Architecture · Dual-Vendor Comparison · Internal Reference</span>
+    </div>
+    <h1>
+      <span class="lang-zh">迈瑞瑞智联 <strong class="hl">M-Connect</strong> 与 Philips <strong class="hl2">Connected Care</strong><br>两套患者监护生态，一份对照参考</span>
+      <span class="lang-en" hidden>Mindray <strong class="hl">M-Connect</strong> and Philips <strong class="hl2">Connected Care</strong><br>Two patient-monitoring ecosystems, one side-by-side reference</span>
+    </h1>
+    <p class="lede lang-zh">本页整合了两份独立的解决方案架构报告——瑞智联M-Connect与Philips Connected Care——按相同的九个维度并排组织，用顶部或下方的切换按钮即可在两者之间来回对照，不需要分别打开两份文档。第08节"架构层级对照"与第09节"附录"始终同时呈现双方内容。</p>
+    <p class="lede lang-en" hidden>This page combines two independent solution architecture reports — Mindray M-Connect and Philips Connected Care — organized side by side across the same ten dimensions. Use the toggle at the top or below to switch between the two without opening separate documents. Section 08 ("Head-to-Head") and Section 09 ("Appendix") always show both vendors at once.</p>
+
+    <div class="hero-compare">
+      <div class="hero-card hc-red">
+        <div class="hc-name"><span class="lang-zh">瑞智联 M-Connect（迈瑞医疗）</span><span class="lang-en" hidden>M-Connect (Mindray)</span></div>
+        <div class="hc-stats">
+          <div><div class="hc-num mono">1,000+</div><div class="hc-lbl"><span class="lang-zh">国内累计装机医院</span><span class="lang-en" hidden>Hospitals installed (China, cumulative)</span></div></div>
+          <div><div class="hc-num mono">650+</div><div class="hc-lbl"><span class="lang-zh">国际M-Connect签单项目</span><span class="lang-en" hidden>International M-Connect contracts</span></div></div>
+          <div><div class="hc-num mono">4</div><div class="hc-lbl"><span class="lang-zh">BeneLink单模块接入数</span><span class="lang-en" hidden>Devices per BeneLink module</span></div></div>
+          <div><div class="hc-num mono">1,200</div><div class="hc-lbl"><span class="lang-zh">CMS单网络最大设备数</span><span class="lang-en" hidden>Max devices per CMS network</span></div></div>
+        </div>
+      </div>
+      <div class="hero-card hc-blue">
+        <div class="hc-name"><span class="lang-zh">Connected Care（Philips）</span><span class="lang-en" hidden>Connected Care (Philips)</span></div>
+        <div class="hc-stats">
+          <div><div class="hc-num mono"><span class="lang-zh">第4代</span><span class="lang-en" hidden>Gen 4</span></div><div class="hc-lbl"><span class="lang-zh">PIC iX平台迭代</span><span class="lang-en" hidden>PIC iX platform generation</span></div></div>
+          <div><div class="hc-num mono"><span class="lang-zh">≤4/≤8台</span><span class="lang-en" hidden>≤4 / ≤8</span></div><div class="hc-lbl"><span class="lang-zh">Bedside/Enterprise整合数</span><span class="lang-en" hidden>Devices: Bedside / Enterprise tier</span></div></div>
+          <div><div class="hc-num mono">1,024</div><div class="hc-lbl"><span class="lang-zh">PIC iX单网络最大床位</span><span class="lang-en" hidden>Max beds per PIC iX network</span></div></div>
+          <div><div class="hc-num mono">28→3</div><div class="hc-lbl"><span class="lang-zh">UHKC案例单床日均报警次数</span><span class="lang-en" hidden>UHKC case: alarms/bed/day</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggle-prompt">
+      <span class="lang-zh">切换查看：</span><span class="lang-en" hidden>Switch vendor:</span>
+      <div class="vt vt-lg" data-vt-group>
+        <button class="vt-btn active" data-vendor="mindray">M-Connect</button>
+        <button class="vt-btn" data-vendor="philips">Philips</button>
+      </div>
+    </div>
+    <div class="toggle-prompt">
+      <span class="lang-zh">语言 / Language：</span><span class="lang-en" hidden>Language / 语言：</span>
+      <div class="lt lt-lg" data-lt-group>
+        <button class="lt-btn active" data-lang="zh">中文</button>
+        <button class="lt-btn" data-lang="en">English</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 00 EXECUTIVE SUMMARY ============ -->
+<section id="exec" class="divider">
+  <div class="wrap">
+    <div class="eyebrow reveal">00 · Executive Summary</div>
+    <h2 class="reveal"><span class="lang-zh">定位、战略与目标客户</span><span class="lang-en" hidden>Positioning, Strategy &amp; Target Customers</span></h2>
+    <p class="lede reveal" style="margin-top:14px;">
+      <span class="lang-zh">当前查看：<b class="mono" id="exec-vendor-label">瑞智联 M-Connect</b></span>
+      <span class="lang-en" hidden>Currently viewing: <b class="mono" id="exec-vendor-label-en">M-Connect</b></span>
+    </p>
+
+    <div class="vendor-block vb-active" data-vendor="mindray">
+      <p style="max-width:760px;" class="lang-zh">瑞智联是迈瑞医疗2020年推出的院内医疗设备互联互通生态系统，与"瑞影云++"（医学影像云）、"迈瑞智检"（体外诊断实验室解决方案）并称"三瑞"，共同构成迈瑞从单一设备供应商向"设备+IT+AI"整体解决方案供应商转型的核心载体。</p>
+      <p style="max-width:760px;" class="lang-en" hidden>M-Connect is Mindray's in-hospital medical device interoperability ecosystem, launched in 2020. Together with "Vue Cloud++" (medical imaging cloud) and "Mindray Smart Lab" (in-vitro diagnostics lab solution) — collectively the "three ecosystems" — it forms the core vehicle for Mindray's transformation from a single-device vendor into a full "device + IT + AI" solutions provider.</p>
+      <div class="threecol">
+        <div>
+          <h3 class="lang-zh">产品战略</h3><h3 class="lang-en" hidden>Product Strategy</h3>
+          <p class="lang-zh">· 以监护仪为核心枢纽，通过BeneLink连接呼吸机/麻醉机/输注泵，一屏整合</p>
+          <p class="lang-zh">· 通过CMS与eGateway分层上抛，形成"床旁—科室—全院—跨院区"架构</p>
+          <p class="lang-zh">· 按临床场景打包销售，提升客单价与粘性</p>
+          <p class="lang-zh">· 沉淀"设备全息数据库"，服务科研与AI应用</p>
+          <p class="lang-en" hidden>· Patient monitor as the central hub — BeneLink connects ventilators / anesthesia machines / infusion pumps into one screen</p>
+          <p class="lang-en" hidden>· CMS and eGateway escalate data in tiers, forming a "bedside → unit → hospital → cross-campus" architecture</p>
+          <p class="lang-en" hidden>· Sold as bundled clinical-scenario packages to raise deal size and stickiness</p>
+          <p class="lang-en" hidden>· Accumulates a "device data repository" to support research and AI applications</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">目标客户</h3><h3 class="lang-en" hidden>Target Customers</h3>
+          <p class="lang-zh">核心科室与决策链条：</p><p class="lang-en" hidden>Core units &amp; decision chain:</p>
+          <div>
+            <span class="chip-static lang-zh">ICU重症医学科</span><span class="chip-static lang-zh">手术室·麻醉科</span><span class="chip-static lang-zh">急诊科</span><span class="chip-static lang-zh">心内科</span><span class="chip-static lang-zh">普通病房</span>
+            <span class="chip-static lang-en" hidden>ICU</span><span class="chip-static lang-en" hidden>OR / Anesthesia</span><span class="chip-static lang-en" hidden>Emergency Dept.</span><span class="chip-static lang-en" hidden>Cardiology</span><span class="chip-static lang-en" hidden>General Ward</span>
+          </div>
+          <div style="margin-top:6px;">
+            <span class="chip-static lang-zh">信息科/IT</span><span class="chip-static lang-zh">设备科/临床工程</span><span class="chip-static lang-zh">护理部</span><span class="chip-static lang-zh">分管院长</span>
+            <span class="chip-static lang-en" hidden>IT Dept.</span><span class="chip-static lang-en" hidden>Biomed / Clinical Eng.</span><span class="chip-static lang-en" hidden>Nursing Dept.</span><span class="chip-static lang-en" hidden>Deputy Hospital Director</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="lang-zh">代表性国际案例</h3><h3 class="lang-en" hidden>Representative International Cases</h3>
+          <div class="case-list">
+            <div class="case-item lang-zh"><b>德国 · 汉诺威</b><span>由单产品演示到全院监护方案整体替换</span></div>
+            <div class="case-item lang-zh"><b>挪威</b><span>拿下当地排名前三大学医院全院监护项目</span></div>
+            <div class="case-item lang-zh"><b>英国 · 皇家帕普沃斯医院</b><span>设备采购负责人评价迈瑞售后服务"真实可触"</span></div>
+            <div class="case-item lang-zh"><b>澳大利亚</b><span>连接偏远地区医疗机构，分担乡村诊疗压力</span></div>
+            <div class="case-item lang-en" hidden><b>Germany · Hannover</b><span>Grew from a single-product demo to a full hospital-wide monitoring replacement</span></div>
+            <div class="case-item lang-en" hidden><b>Norway</b><span>Won a hospital-wide monitoring project at a top-3 ranked university hospital</span></div>
+            <div class="case-item lang-en" hidden><b>UK · Royal Papworth Hospital</b><span>Procurement lead described Mindray's after-sales service as "hands-on and real"</span></div>
+            <div class="case-item lang-en" hidden><b>Australia</b><span>Connects remote healthcare facilities, easing pressure on rural care sites</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vendor-block" data-vendor="philips">
+      <p style="max-width:760px;" class="lang-zh">Philips集团业务分为诊断与治疗、Connected Care（占比不到30%）、个人健康三大板块。Connected Care涵盖监护与分析系统、临床信息化及睡眠呼吸治疗业务，监护业务约占该板块收入60%；2025年Q3可比销售额同比增长5.1%。PIC iX作为核心平台已迭代至第4代，定位为"业界唯一可IDN级集中部署的患者监护软件"。</p>
+      <p style="max-width:760px;" class="lang-en" hidden>Philips is organized into three segments: Diagnosis &amp; Treatment, Connected Care (under 30% of group revenue), and Personal Health. Connected Care covers monitoring &amp; analytics, clinical informatics, and sleep &amp; respiratory care; monitoring accounts for roughly 60% of the segment's revenue. Q3 2025 comparable sales in Connected Care grew 5.1% year over year. PIC iX, the segment's core platform, is now in its 4th generation, positioned as "the only patient monitoring software that can be deployed centrally across an entire IDN."</p>
+      <div class="threecol">
+        <div>
+          <h3 class="lang-zh">产品战略</h3><h3 class="lang-en" hidden>Product Strategy</h3>
+          <p class="lang-zh">· 平台优先：核心放在PIC iX，强调厂商中立的第三方设备接入（Capsule MDIP）</p>
+          <p class="lang-zh">· 连接层分级：Bedside（≤4台）与Enterprise（≤8台）分工清晰</p>
+          <p class="lang-zh">· IDN级集中部署叙事，而非科室级场景打包</p>
+          <p class="lang-zh">· SDC开放标准发起成员，目标跨厂商统一命令与控制</p>
+          <p class="lang-en" hidden>· Platform-first: the core sits in PIC iX, emphasizing vendor-neutral third-party device access (Capsule MDIP)</p>
+          <p class="lang-en" hidden>· Tiered connectivity: Bedside (≤4 devices) and Enterprise (≤8 devices) are cleanly separated</p>
+          <p class="lang-en" hidden>· An IDN-scale centralized-deployment narrative rather than department-level bundling</p>
+          <p class="lang-en" hidden>· A founding member of the SDC open standard, aiming for cross-vendor command &amp; control</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">目标客户</h3><h3 class="lang-en" hidden>Target Customers</h3>
+          <p class="lang-zh">核心科室与决策链条：</p><p class="lang-en" hidden>Core units &amp; decision chain:</p>
+          <div>
+            <span class="chip-static lang-zh">ICU/NICU/PICU</span><span class="chip-static lang-zh">手术室·麻醉科</span><span class="chip-static lang-zh">急诊科</span><span class="chip-static lang-zh">普通病房/术后</span><span class="chip-static lang-zh">远程/居家延伸</span>
+            <span class="chip-static lang-en" hidden>ICU / NICU / PICU</span><span class="chip-static lang-en" hidden>OR / Anesthesia</span><span class="chip-static lang-en" hidden>Emergency Dept.</span><span class="chip-static lang-en" hidden>General Ward / Post-op</span><span class="chip-static lang-en" hidden>Remote / Home Extension</span>
+          </div>
+          <div style="margin-top:6px;">
+            <span class="chip-static lang-zh">信息科/IT</span><span class="chip-static lang-zh">临床工程</span><span class="chip-static lang-zh">护理部</span><span class="chip-static lang-zh">IDN管理层</span>
+            <span class="chip-static lang-en" hidden>IT Dept.</span><span class="chip-static lang-en" hidden>Clinical Engineering</span><span class="chip-static lang-en" hidden>Nursing Dept.</span><span class="chip-static lang-en" hidden>IDN Leadership</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="lang-zh">代表性案例</h3><h3 class="lang-en" hidden>Representative Cases</h3>
+          <div class="case-list">
+            <div class="case-item lang-zh"><b>美国 UHKC</b><span>Lakewood ICU单元：单床日均报警28→3次；估算节省约10,503小时（Philips注明"结果因机构而异"）</span></div>
+            <div class="case-item lang-zh"><b>美国 AdventHealth</b><span>2025年末签订五年期战略合作，覆盖9州50余个院区</span></div>
+            <div class="case-item lang-zh"><b>学术研究（PMC/NCBI）</b><span>护士对Guardian系统NPS均分8.8，患者对eTrAC居家系统NPS均分9.2</span></div>
+            <div class="case-item lang-en" hidden><b>US · UHKC</b><span>Lakewood ICU unit: alarms/bed/day fell from 28 to 3; an estimated ~10,503 hours saved (Philips notes "results may vary by institution")</span></div>
+            <div class="case-item lang-en" hidden><b>US · AdventHealth</b><span>Signed a five-year strategic partnership in late 2025, spanning 50+ campuses across 9 states</span></div>
+            <div class="case-item lang-en" hidden><b>Academic study (PMC/NCBI)</b><span>Nurses rated Guardian a mean NPS of 8.8; patients rated the eTrAC home system a mean NPS of 9.2</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 01 ARCHITECTURE + CONNECTIVITY ============ -->
+<section id="arch" class="divider alt-bg">
+  <div class="wrap">
+    <div class="eyebrow reveal">01 · Architecture &amp; Device Connectivity</div>
+    <h2 class="reveal"><span class="lang-zh">一张图看懂：从床旁设备到医院系统</span><span class="lang-en" hidden>One Diagram: From Bedside Device to Hospital System</span></h2>
+    <p class="lede reveal lang-zh" style="margin-top:14px;">下图为基于官方公开资料整理绘制的示意架构图，用于表达数据分层与设备连接逻辑，并非厂商官方原图。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">The diagram below is compiled from official public materials to illustrate data layering and device-connectivity logic — it is not an official vendor diagram.</p>
+
+    <div class="vendor-block vb-active" data-vendor="mindray">
+      <div class="frame">
+        <div class="diagram-scale"><div class="diagram-wrap" id="diagram-mindray"></div></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--gray-40)"></span><span class="lang-zh">床旁设备层</span><span class="lang-en" hidden>Bedside device layer</span></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--red)"></span><span class="lang-zh">连接/汇聚层（BeneLink·监护仪Hub）</span><span class="lang-en" hidden>Connect / aggregation layer (BeneLink · monitor hub)</span></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--ink)"></span><span class="lang-zh">集成/企业系统层（CMS·eGateway·HIS）</span><span class="lang-en" hidden>Integration / enterprise layer (CMS · eGateway · HIS)</span></div>
+          <div class="legend-item"><span class="swatch" style="border-top:2px dashed var(--red-100)"></span><span class="lang-zh">延伸分支</span><span class="lang-en" hidden>Extension branch</span></div>
+        </div>
+      </div>
+      <div class="chiprow">
+        <div class="chip">BeneLink <b>4×RJ-45</b></div>
+        <div class="chip"><span class="lang-zh">集成窗口最多 <b>24</b> 项数值</span><span class="lang-en" hidden>Up to <b>24</b> values in integration window</span></div>
+        <div class="chip"><span class="lang-zh">CMS 单网络最大 <b>1,200</b> 台设备</span><span class="lang-en" hidden>CMS network max <b>1,200</b> devices</span></div>
+        <div class="chip">eGateway <b>HL7 v2.1–2.6</b> / IHE PCD</div>
+        <div class="chip"><span class="lang-zh">数据缓存回填 <b>48</b> 小时</span><span class="lang-en" hidden>Data buffer / replay: <b>48</b> hours</span></div>
+      </div>
+      <div class="threecol">
+        <div>
+          <h3 class="lang-zh">解读要点</h3><h3 class="lang-en" hidden>Key Reading</h3>
+          <p class="lang-zh">监护仪被选为"Hub"，因其已具备大屏、报警链路与网络能力，复用成本最低。BeneLink提供4个串口，逐一识别第三方设备并统一转换后送入监护仪"设备集成窗口"。</p>
+          <p class="lang-en" hidden>The monitor is chosen as the "hub" because it already has a large display, alarm pathway, and network connectivity — reusing it is the lowest-cost option. BeneLink offers 4 serial ports, identifying third-party devices one by one and feeding converted data into the monitor's "device integration window."</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">数据最终去向</h3><h3 class="lang-en" hidden>Where the Data Ends Up</h3>
+          <p class="lang-zh">eGateway是唯一直接对接医院信息系统的组件，"单管道"服务ADT、结果上报、告警与文档归档。两条分支：CMS→CMS Viewer/Mobile Viewer；HIS→设备全息数据库。</p>
+          <p class="lang-en" hidden>eGateway is the only component that connects directly to hospital information systems, acting as a "single pipe" for ADT, results reporting, alarms, and document archiving. Two branches: CMS → CMS Viewer / Mobile Viewer; HIS → device data repository.</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">数据格式与患者识别</h3><h3 class="lang-en" hidden>Data Format &amp; Patient ID</h3>
+          <p class="lang-zh">外部设备最多展示约24项数值，报警统一呈现（"+"号前缀区分来源）。患者身份识别与ADT下发联动，结合腕带扫码实现输液闭环。</p>
+          <p class="lang-en" hidden>External devices can display up to ~24 values; alarms are unified (a "+" prefix distinguishes the source device). Patient ID links to ADT delivery, combined with wristband scanning for closed-loop infusion.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="vendor-block" data-vendor="philips">
+      <div class="frame">
+        <div class="diagram-scale"><div class="diagram-wrap" id="diagram-philips"></div></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--gray-40)"></span><span class="lang-zh">床旁设备层</span><span class="lang-en" hidden>Bedside device layer</span></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span><span class="lang-zh">连接/汇聚层（IntelliBridge Bedside·IntelliVue Hub）</span><span class="lang-en" hidden>Connect / aggregation layer (IntelliBridge Bedside · IntelliVue hub)</span></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--ink)"></span><span class="lang-zh">集成/企业系统层（PIC iX·IntelliBridge Enterprise·HIS）</span><span class="lang-en" hidden>Integration / enterprise layer (PIC iX · IntelliBridge Enterprise · HIS)</span></div>
+          <div class="legend-item"><span class="swatch" style="border-top:2px dashed var(--blue-100)"></span><span class="lang-zh">延伸分支</span><span class="lang-en" hidden>Extension branch</span></div>
+        </div>
+      </div>
+      <div class="chiprow">
+        <div class="chip"><span class="lang-zh">IntelliBridge Bedside <b>≤4台</b>设备</span><span class="lang-en" hidden>IntelliBridge Bedside <b>≤4</b> devices</span></div>
+        <div class="chip"><span class="lang-zh">IntelliBridge Enterprise <b>≤8台</b>设备</span><span class="lang-en" hidden>IntelliBridge Enterprise <b>≤8</b> devices</span></div>
+        <div class="chip"><span class="lang-zh">EC40/80 Hub 存储 <b>25</b> 个设备驱动</span><span class="lang-en" hidden>EC40/80 Hub stores <b>25</b> device drivers</span></div>
+        <div class="chip">IHE PCD: <b>Device / Infusion / Alarm</b> <span class="lang-zh">三类规范</span><span class="lang-en" hidden>profiles</span></div>
+        <div class="chip"><span class="lang-zh">PIC iX 最多 <b>1,024</b> 床位</span><span class="lang-en" hidden>PIC iX up to <b>1,024</b> beds</span></div>
+      </div>
+      <div class="threecol">
+        <div>
+          <h3 class="lang-zh">解读要点</h3><h3 class="lang-en" hidden>Key Reading</h3>
+          <p class="lang-zh">Philips把生态核心放在<b>PIC iX平台</b>而非单一监护仪。连接层拆两级：IntelliBridge Bedside面向床旁（≤4台），Enterprise面向企业级（≤8台，IHE PCD细分规范）。</p>
+          <p class="lang-en" hidden>Philips puts the ecosystem's core in the <b>PIC iX platform</b> rather than a single monitor. The connectivity layer splits into two tiers: IntelliBridge Bedside for point-of-care (≤4 devices), and Enterprise for the enterprise tier (≤8 devices, granular IHE PCD profiles).</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">数据最终去向</h3><h3 class="lang-en" hidden>Where the Data Ends Up</h3>
+          <p class="lang-zh">IntelliBridge Enterprise是唯一企业级互操作入口，基于HL7/FHIR对接HIS/EMR/ADT。两条分支：PIC iX→Care Assist（可操作）；企业层→Guardian Solution/ICCA→Clinical Insights Manager。</p>
+          <p class="lang-en" hidden>IntelliBridge Enterprise is the sole enterprise-level interoperability entry point, connecting to HIS/EMR/ADT via HL7/FHIR. Two branches: PIC iX → Care Assist (actionable); enterprise tier → Guardian Solution / ICCA → Clinical Insights Manager.</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">数据格式与患者识别</h3><h3 class="lang-en" hidden>Data Format &amp; Patient ID</h3>
+          <p class="lang-zh">IntelliBridge Bedside最多同时呈现4台设备数据；Visual Patient Avatar将参数转化为可视化人形图像（试点阶段）。患者识别推断依托医院ADT/腕带体系。</p>
+          <p class="lang-en" hidden>IntelliBridge Bedside can display up to 4 devices' data at once; Visual Patient Avatar renders parameters as a visual human figure (pilot stage). Patient identification is inferred to rely on the hospital's own ADT / wristband system.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 PRODUCT COMPONENTS ============ -->
+<section id="components" class="divider">
+  <div class="wrap">
+    <div class="eyebrow reveal">02 · Product Components</div>
+    <h2 class="reveal"><span class="lang-zh">核心组件拆解</span><span class="lang-en" hidden>Core Components, Unpacked</span></h2>
+
+    <div class="vendor-block vb-active" data-vendor="mindray">
+      <div class="twocol">
+        <div>
+          <h3 class="lang-zh">BeneVision 监护仪家族</h3><h3 class="lang-en" hidden>BeneVision Monitor Family</h3>
+          <p class="lang-zh">· <b>N系列</b>（N12/N15/N17/N19/N22）：急诊、重症、手术室高强度场景</p>
+          <p class="lang-zh">· <b>V系列</b>（V500/V700/VMAX）：新一代平台，多设备融合显示</p>
+          <p class="lang-zh">· <b>ePM系列</b>：中低端场景，支持有线/无线接入CMS与eGateway</p>
+          <p class="lang-en" hidden>· <b>N Series</b> (N12/N15/N17/N19/N22): high-acuity ED, ICU, and OR scenarios</p>
+          <p class="lang-en" hidden>· <b>V Series</b> (V500/V700/VMAX): next-gen platform, multi-device fused display</p>
+          <p class="lang-en" hidden>· <b>ePM Series</b>: mid/low-tier scenarios, wired/wireless access to CMS and eGateway</p>
+          <h3 style="margin-top:24px;" class="lang-zh">Mobile Viewer 移动端</h3><h3 style="margin-top:24px;" class="lang-en" hidden>Mobile Viewer</h3>
+          <p class="lang-zh">· 平台：iOS/Android官方App，需配合Mobile Server</p>
+          <p class="lang-zh">· 功能：多患者同屏、报警可视化、输注泵关键信息展示</p>
+          <p class="lang-zh">· 权限：基于角色认证，限"院内网络已连接"场景</p>
+          <p class="lang-en" hidden>· Platform: official iOS/Android app, requires a Mobile Server</p>
+          <p class="lang-en" hidden>· Features: multi-patient view, alarm visualization, key infusion-pump info</p>
+          <p class="lang-en" hidden>· Access: role-based authentication, limited to "connected to hospital network"</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">BeneVision CMS 五组件</h3><h3 class="lang-en" hidden>BeneVision CMS: Five Components</h3>
+          <div class="tblwrap">
+            <table class="cmp-table">
+              <thead><tr><th><span class="lang-zh">组件</span><span class="lang-en" hidden>Component</span></th><th><span class="lang-zh">关键能力</span><span class="lang-en" hidden>Key Capability</span></th></tr></thead>
+              <tbody>
+                <tr><td>CentralStation</td><td><span class="lang-zh">多床监护、集中报警、远程控制</span><span class="lang-en" hidden>Multi-bed monitoring, centralized alarms, remote control</span></td></tr>
+                <tr><td>WorkStation</td><td><span class="lang-zh">最多3块宽屏，单终端监护最多64名患者；网络最多120台</span><span class="lang-en" hidden>Up to 3 widescreens; one terminal monitors up to 64 patients; up to 120 per network</span></td></tr>
+                <tr><td>ViewStation</td><td><span class="lang-zh">公共区域只读浏览</span><span class="lang-en" hidden>Read-only viewing for common areas</span></td></tr>
+                <tr><td>CMS Viewer</td><td><span class="lang-zh">VPN/院内网络访问，历史数据回顾，可Citrix虚拟化</span><span class="lang-en" hidden>VPN / in-hospital access, historical review, Citrix virtualization option</span></td></tr>
+                <tr><td>Mobile Viewer</td><td><span class="lang-zh">手机/平板App，需Mobile Server</span><span class="lang-en" hidden>Phone/tablet app, requires Mobile Server</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vendor-block" data-vendor="philips">
+      <div class="twocol">
+        <div>
+          <h3 class="lang-zh">IntelliVue 监护仪家族</h3><h3 class="lang-en" hidden>IntelliVue Monitor Family</h3>
+          <p class="lang-zh">· <b>6000系列</b>：入门级，支持独立/直接HL7/完整企业集成三种模式</p>
+          <p class="lang-zh">· <b>MX系列</b>：MX100便携；MX850面向最高急重症，22寸屏、HTML5/Citrix、RFID-NFC、多层加密</p>
+          <p class="lang-zh">· <b>X3</b>：紧凑双用途转运监护仪</p>
+          <p class="lang-zh">· 2023年Masimo合作；2025年7月Medtronic合作（Nellcor/Microstream/BIS）</p>
+          <p class="lang-en" hidden>· <b>6000 Series</b>: entry-level, supports standalone / direct-HL7 / full enterprise-integration modes</p>
+          <p class="lang-en" hidden>· <b>MX Series</b>: MX100 portable; MX850 for the highest-acuity settings — 22" screen, HTML5/Citrix, RFID-NFC, layered encryption</p>
+          <p class="lang-en" hidden>· <b>X3</b>: compact dual-purpose transport monitor</p>
+          <p class="lang-en" hidden>· Masimo partnership (2023); Medtronic partnership (July 2025 — Nellcor/Microstream/BIS)</p>
+          <h3 style="margin-top:24px;" class="lang-zh">Care Assist 移动端</h3><h3 style="margin-top:24px;" class="lang-en" hidden>Care Assist Mobile</h3>
+          <p class="lang-zh">· 不仅"查看"，还能确认告警、启停NIBP测量</p>
+          <p class="lang-zh">· 与PIC iX、Event Notification联动，形成"移动即操作"闭环</p>
+          <p class="lang-en" hidden>· Not just "viewing" — can also acknowledge alarms and start/stop NIBP readings</p>
+          <p class="lang-en" hidden>· Works with PIC iX and Event Notification to close the loop on "mobile as action"</p>
+        </div>
+        <div>
+          <h3 class="lang-zh">IntelliBridge 三级连接体系</h3><h3 class="lang-en" hidden>IntelliBridge: Three-Tier Connectivity</h3>
+          <div class="tblwrap">
+            <table class="cmp-table">
+              <thead><tr><th><span class="lang-zh">组件</span><span class="lang-en" hidden>Component</span></th><th><span class="lang-zh">关键能力</span><span class="lang-en" hidden>Key Capability</span></th></tr></thead>
+              <tbody>
+                <tr><td>IntelliBridge Bedside</td><td><span class="lang-zh">最多同时接入4台外部设备，数据显示于监护仪</span><span class="lang-en" hidden>Up to 4 external devices at once, data shown on the monitor</span></td></tr>
+                <tr><td>IntelliBridge System</td><td><span class="lang-zh">EC5+EC40/80 Hub（存25个驱动）+SC50，对接HIS/ICCA</span><span class="lang-en" hidden>EC5 + EC40/80 Hub (stores 25 drivers) + SC50, interfaces to HIS/ICCA</span></td></tr>
+                <tr><td>IntelliBridge Enterprise</td><td><span class="lang-zh">最多整合8台设备，IHE PCD三类规范，对接HIS/EMR/ADT</span><span class="lang-en" hidden>Up to 8 devices, three IHE PCD profiles, interfaces to HIS/EMR/ADT</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3 style="margin-top:24px;" class="lang-zh">PIC iX 平台能力</h3><h3 style="margin-top:24px;" class="lang-en" hidden>PIC iX Platform Capabilities</h3>
+          <p class="lang-zh">· 第4代，最多支持1024床位；Enterprise Link虚拟化冗余；中断自动切Local Mode</p>
+          <p class="lang-en" hidden>· Gen 4, supports up to 1,024 beds; Enterprise Link virtualized redundancy; auto-fails over to Local Mode during outages</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 CLINICAL WORKFLOW ============ -->
+<section id="workflow" class="divider alt-bg">
+  <div class="wrap">
+    <div class="eyebrow reveal">03 · Clinical Workflow</div>
+    <h2 class="reveal"><span class="lang-zh">四大临床场景：从入科到数据沉淀</span><span class="lang-en" hidden>Four Clinical Scenarios: From Admission to Data Archival</span></h2>
+    <p class="lede reveal lang-zh" style="margin-top:14px;">先用厂商切换按钮选择查看对象，再用下方标签切换 ICU / 围术期 / 急诊 / 普通病房四条工作流。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">Use the vendor toggle above to pick who you're viewing, then use the tabs below to switch between ICU / Perioperative / ED / General Ward workflows.</p>
+
+    <div class="vendor-block vb-active" data-vendor="mindray">
+      <div class="tabs" id="wf-tabs-mindray">
+        <button class="tab-btn active" data-tab="icu"><span class="lang-zh">ICU 重症</span><span class="lang-en" hidden>ICU</span></button>
+        <button class="tab-btn" data-tab="or"><span class="lang-zh">围术期 OR</span><span class="lang-en" hidden>Perioperative</span></button>
+        <button class="tab-btn" data-tab="er"><span class="lang-zh">急诊 ER</span><span class="lang-en" hidden>Emergency</span></button>
+        <button class="tab-btn" data-tab="ward"><span class="lang-zh">普通病房</span><span class="lang-en" hidden>General Ward</span></button>
+      </div>
+      <div class="timeline" id="tl-wrap-mindray">
+        <div class="timeline-track" id="tl-track-mindray-icu"></div>
+        <div class="timeline-track" id="tl-track-mindray-or" style="display:none"></div>
+        <div class="timeline-track" id="tl-track-mindray-er" style="display:none"></div>
+        <div class="timeline-track" id="tl-track-mindray-ward" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="vendor-block" data-vendor="philips">
+      <div class="tabs" id="wf-tabs-philips">
+        <button class="tab-btn active" data-tab="icu"><span class="lang-zh">ICU 重症</span><span class="lang-en" hidden>ICU</span></button>
+        <button class="tab-btn" data-tab="or"><span class="lang-zh">围术期 OR</span><span class="lang-en" hidden>Perioperative</span></button>
+        <button class="tab-btn" data-tab="er"><span class="lang-zh">急诊 ER</span><span class="lang-en" hidden>Emergency</span></button>
+        <button class="tab-btn" data-tab="ward"><span class="lang-zh">普通病房</span><span class="lang-en" hidden>General Ward</span></button>
+      </div>
+      <div class="timeline" id="tl-wrap-philips">
+        <div class="timeline-track" id="tl-track-philips-icu"></div>
+        <div class="timeline-track" id="tl-track-philips-or" style="display:none"></div>
+        <div class="timeline-track" id="tl-track-philips-er" style="display:none"></div>
+        <div class="timeline-track" id="tl-track-philips-ward" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 WORKFLOW CAPABILITY LADDER (always both) ============ -->
+<section id="ladder" class="divider">
+  <div class="wrap">
+    <div class="eyebrow neutral reveal">04 · Workflow Capability Ladder</div>
+    <h2 class="reveal"><span class="lang-zh">端到端临床工作流：双方逐环节能力对照</span><span class="lang-en" hidden>End-to-End Clinical Workflow: Step-by-Step Comparison</span></h2>
+    <p class="lede reveal lang-zh" style="margin-top:14px;">把 03 节里分别按厂商切换的 ICU / 围术期 / 急诊 / 普通病房 / 居家延伸五段工作流，按患者真实就诊路径合并成一条连续的十步旅程，逐环节并排列出双方能力，并标注该环节谁的公开资料更突出、哪些能力是一方独有。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">The five workflows from Section 03 (ICU / Perioperative / ED / General Ward / Home Extension) are merged into one continuous ten-step patient journey. Each step lists both vendors' capabilities side by side, flagging whose public materials are more developed and which capabilities are exclusive to one vendor.</p>
+    <div class="ladder-method reveal lang-zh">
+      方法说明：以下"领先/独有"判断，依据是双方<b>官网及公开产品资料中该环节能力的表述深度与具体程度</b>（是否有命名产品、量化案例、合规标准佐证），并非通过独立临床测试验证的实际疗效或可靠性差异。标注仅供内部讨论参考，实际选型建议结合产品演示与客户案例进一步核实。
+    </div>
+    <div class="ladder-method reveal lang-en" hidden>
+      Methodology: the "leads / exclusive" calls below are based on <b>how thoroughly and specifically each step's capability is described in each vendor's official website and public materials</b> (named products, quantified case studies, cited compliance standards) — not on independently verified clinical performance or reliability differences. These are internal discussion notes only; confirm with product demos and customer references before making selection decisions.
+    </div>
+    <div class="ladder-legend reveal">
+      <div class="ladder-legend-item"><span class="ladder-ldot red"></span><span class="lang-zh">瑞智联表述更突出</span><span class="lang-en" hidden>M-Connect more developed</span></div>
+      <div class="ladder-legend-item"><span class="ladder-ldot blue"></span><span class="lang-zh">Philips表述更突出</span><span class="lang-en" hidden>Philips more developed</span></div>
+      <div class="ladder-legend-item"><span class="ladder-ldot gold"></span><span class="lang-zh">其中一方独有能力</span><span class="lang-en" hidden>Exclusive to one vendor</span></div>
+      <div class="ladder-legend-item"><span class="ladder-ldot tie"></span><span class="lang-zh">两者相当 / 各有侧重</span><span class="lang-en" hidden>Comparable / different emphasis</span></div>
+    </div>
+    <div class="ladder-scorecard reveal">
+      <div class="lsc-item lsc-blue"><div class="lsc-num mono">4</div><div class="lsc-lbl"><span class="lang-zh">环节 Philips 更突出</span><span class="lang-en" hidden>steps Philips leads</span></div></div>
+      <div class="lsc-item lsc-red"><div class="lsc-num mono">1</div><div class="lsc-lbl"><span class="lang-zh">环节瑞智联更突出</span><span class="lang-en" hidden>step M-Connect leads</span></div></div>
+      <div class="lsc-item lsc-gold"><div class="lsc-num mono">1</div><div class="lsc-lbl"><span class="lang-zh">环节 Philips 独有</span><span class="lang-en" hidden>step Philips-exclusive</span></div></div>
+      <div class="lsc-item lsc-tie"><div class="lsc-num mono">4</div><div class="lsc-lbl"><span class="lang-zh">环节两者相当</span><span class="lang-en" hidden>steps comparable</span></div></div>
+    </div>
+
+    <div class="ladder-journey" id="ladder-journey">
+      <div class="ladder-spine"></div>
+    </div>
+
+    <p class="reveal lang-zh" style="margin-top:8px; max-width:820px;">十个环节里，Philips 在预警评分、报警治理、移动端操作、跨院区部署这四个环节的公开资料更具体、更有量化案例支撑；瑞智联在重症用药安全环节（InfusionView / SafeDose DERS）的产品命名和机制说明更明确。居家延伸监护是唯一一处瑞智联公开资料完全空白的领域——如果这块对 ProductA 有战略意义，可能是值得优先关注的差异化窗口。</p>
+    <p class="reveal lang-en" hidden style="margin-top:8px; max-width:820px;">Across the ten steps, Philips' public materials are more specific and better supported with quantified case data in four areas: early warning scoring, alarm governance, mobile response, and cross-campus deployment. M-Connect has clearer, more specifically named mechanisms for critical-care medication safety (InfusionView / SafeDose DERS). Home extension monitoring is the one area where M-Connect's public materials are entirely silent — if this matters strategically for ProductA, it may be worth flagging as a priority differentiation window.</p>
+  </div>
+</section>
+
+<!-- ============ 05 CLINICAL APPLICATIONS ============ -->
+<section id="applications" class="divider">
+  <div class="wrap">
+    <div class="eyebrow reveal">05 · Clinical Applications</div>
+    <h2 class="reveal"><span class="lang-zh">临床应用能力一览</span><span class="lang-en" hidden>Clinical Applications at a Glance</span></h2>
+    <div class="vendor-block vb-active" data-vendor="mindray"><div class="grid4" id="app-grid-mindray" style="margin-top:34px;"></div></div>
+    <div class="vendor-block" data-vendor="philips"><div class="grid4" id="app-grid-philips" style="margin-top:34px;"></div></div>
+  </div>
+</section>
+
+<!-- ============ 06 SERVICE & DEPLOYMENT ============ -->
+<section id="deployment" class="divider alt-bg">
+  <div class="wrap">
+    <div class="eyebrow reveal">06 · Service &amp; Deployment</div>
+    <h2 class="reveal"><span class="lang-zh">部署与服务</span><span class="lang-en" hidden>Deployment &amp; Service</span></h2>
+    <div class="vendor-block vb-active" data-vendor="mindray"><div class="grid4" id="deploy-grid-mindray" style="margin-top:34px;"></div></div>
+    <div class="vendor-block" data-vendor="philips"><div class="grid4" id="deploy-grid-philips" style="margin-top:34px;"></div></div>
+  </div>
+</section>
+
+<!-- ============ 07 VALUE BY ROLE ============ -->
+<section id="value" class="divider">
+  <div class="wrap">
+    <div class="eyebrow reveal">07 · Value by Role</div>
+    <h2 class="reveal"><span class="lang-zh">同一套数据，六种角色各取所需</span><span class="lang-en" hidden>One Data Set, Six Roles, Six Different Payoffs</span></h2>
+    <div class="vendor-block vb-active" data-vendor="mindray"><div class="vgrid" id="vgrid-mindray" style="margin-top:40px;"></div></div>
+    <div class="vendor-block" data-vendor="philips"><div class="vgrid" id="vgrid-philips" style="margin-top:40px;"></div></div>
+  </div>
+</section>
+
+<!-- ============ 08 HEAD-TO-HEAD (always both) ============ -->
+<!-- ==== 08 head-to-head : scoped styles for decision-factors sub-table ==== -->
+<style>
+  #compare-ext .cmp-table{min-width:760px;}
+  #compare-ext .cmp-table td .rn{color:var(--gray-40); font-weight:700; font-variant-numeric:tabular-nums; margin-right:4px;}
+  #compare-ext .edge-badge{display:inline-block; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; line-height:1.3;}
+  #compare-ext .edge-badge.b-philips{color:var(--blue-700); background:var(--blue-50); border:1px solid var(--blue-100);}
+  #compare-ext .edge-badge.b-mindray{color:var(--red-700); background:var(--red-50); border:1px solid var(--red-100);}
+  #compare-ext .edge-badge.b-split{color:var(--gold-700); background:var(--gold-50); border:1px solid var(--gold-100);}
+  #compare-ext .edge-badge.b-even{color:var(--gray-70); background:var(--gray-08); border:1px solid var(--gray-20);}
+  #compare-ext .edge-note{display:block; margin-top:6px; font-size:10.5px; color:var(--gray-70); line-height:1.45; max-width:200px;}
+  #compare-ext .ext-note{margin-top:20px; padding:14px 16px; border-left:3px solid var(--gold); background:var(--gold-50); border-radius:0 8px 8px 0; font-size:12.5px; color:var(--gold-700); line-height:1.65;}
+  #compare-ext .ext-note b{color:var(--gold-700);}
+  #compare .cmp-sub{margin-top:56px; padding-top:30px; border-top:1px dashed var(--gray-20);}
+  #compare .cmp-subhead{font-size:18px; font-weight:750; color:var(--ink); margin:0 0 4px; letter-spacing:-.01em;}
+</style>
+<section id="compare" class="divider alt-bg">
+  <div class="wrap">
+    <div class="eyebrow neutral reveal">08 · Head-to-Head</div>
+    <h2 class="reveal"><span class="lang-zh">架构层级对照（双方始终同时呈现）</span><span class="lang-en" hidden>Architecture-Level Comparison (Both Always Shown)</span></h2>
+    <p class="lede reveal lang-zh" style="margin-top:14px;">基于双方官网公开信息的组件级初步对位，用于内部理解产品定位差异，并非严格的一一对应，需谨慎类比。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">A preliminary component-level mapping based on both vendors' public websites, meant to help understand positioning differences internally — not a strict one-to-one correspondence, so treat the analogy with care.</p>
+
+    <div class="tblwrap reveal">
+      <table class="cmp-table">
+        <thead><tr>
+          <th><span class="lang-zh">架构层级</span><span class="lang-en" hidden>Architecture Layer</span></th>
+          <th class="th-red">瑞智联 / M-Connect</th>
+          <th class="th-blue">Philips Connected Care</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><span class="lang-zh">床旁设备/Hub</span><span class="lang-en" hidden>Bedside device / hub</span></td><td>BeneVision N/V/ePM<span class="lang-zh">系列监护仪</span><span class="lang-en" hidden> series monitors</span></td><td>IntelliVue 6000<span class="lang-zh">系列、MX系列监护仪</span><span class="lang-en" hidden> Series, MX Series monitors</span></td></tr>
+          <tr><td><span class="lang-zh">第三方设备集成</span><span class="lang-en" hidden>Third-party device integration</span></td><td><span class="lang-zh">BeneLink（监护仪侧集成，最多4台设备）</span><span class="lang-en" hidden>BeneLink (monitor-side integration, up to 4 devices)</span></td><td><span class="lang-zh">Capsule MDIP（厂商中立，规模化第三方接入）</span><span class="lang-en" hidden>Capsule MDIP (vendor-neutral, scaled third-party access)</span></td></tr>
+          <tr><td><span class="lang-zh">中央监护平台</span><span class="lang-en" hidden>Central monitoring platform</span></td><td><span class="lang-zh">BeneVision CMS（CentralStation/WorkStation/ViewStation）</span><span class="lang-en" hidden>BeneVision CMS (CentralStation/WorkStation/ViewStation)</span></td><td><span class="lang-zh">PIC iX，整合Philips与非Philips设备的360度视图</span><span class="lang-en" hidden>PIC iX, a 360° view combining Philips and non-Philips devices</span></td></tr>
+          <tr><td><span class="lang-zh">医院系统集成引擎</span><span class="lang-en" hidden>Hospital-system integration engine</span></td><td>eGateway (HL7 2.1-2.6, IHE PCD)</td><td><span class="lang-zh">IntelliBridge Enterprise（对接EMR/ADT/HIS）</span><span class="lang-en" hidden>IntelliBridge Enterprise (interfaces to EMR/ADT/HIS)</span></td></tr>
+          <tr><td><span class="lang-zh">远程/移动访问</span><span class="lang-en" hidden>Remote / mobile access</span></td><td><span class="lang-zh">CMS Viewer、Mobile Viewer（偏查看）</span><span class="lang-en" hidden>CMS Viewer, Mobile Viewer (mostly view-only)</span></td><td><span class="lang-zh">Care Assist（具备操作能力，如确认报警/启停NIBP）</span><span class="lang-en" hidden>Care Assist (actionable — e.g., acknowledge alarms / start-stop NIBP)</span></td></tr>
+          <tr><td><span class="lang-zh">预警评分/决策支持</span><span class="lang-en" hidden>Early warning / decision support</span></td><td><span class="lang-zh">监护仪/CMS内置EWS入口</span><span class="lang-en" hidden>EWS entry built into monitor/CMS</span></td><td><span class="lang-zh">Guardian Solution（三层架构）</span><span class="lang-en" hidden>Guardian Solution (three-tier architecture)</span></td></tr>
+          <tr><td><span class="lang-zh">告警路由与升级</span><span class="lang-en" hidden>Alarm routing &amp; escalation</span></td><td><span class="lang-zh">CMS内统一报警呈现</span><span class="lang-en" hidden>Unified alarm display within CMS</span></td><td>Event Notification + CDAS, IEC 80001</td></tr>
+          <tr><td><span class="lang-zh">运维管理</span><span class="lang-en" hidden>Operations management</span></td><td><span class="lang-zh">官网披露较少（推断依托eGateway集中配置）</span><span class="lang-en" hidden>Limited public disclosure (inferred to rely on eGateway central configuration)</span></td><td><span class="lang-zh">远程运维管理方案；Customer Services Portal</span><span class="lang-en" hidden>Remote device operations management; Customer Services Portal</span></td></tr>
+          <tr><td><span class="lang-zh">开放互联战略</span><span class="lang-en" hidden>Open interoperability strategy</span></td><td><span class="lang-zh">BeneLink驱动库持续扩展，相对封闭于自有Hub</span><span class="lang-en" hidden>BeneLink's driver library keeps expanding, but stays relatively closed around its own hub</span></td><td><span class="lang-zh">明确推动SDC开放标准，跨厂商统一命令与控制</span><span class="lang-en" hidden>Actively drives the SDC open standard toward cross-vendor command &amp; control</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="threecol" style="grid-template-columns:1fr 1fr;">
+      <div class="reveal">
+        <h3 class="lang-zh">初步观察（一）</h3><h3 class="lang-en" hidden>Initial Observations (1)</h3>
+        <p class="lang-zh">· <b>架构哲学</b>：Philips强调平台厂商中立，MDIP+SDC开放协议；瑞智联"少即是多"，单一Hub集成、成本更低</p>
+        <p class="lang-zh">· <b>移动端能力</b>：Care Assist具备"操作"能力；Mobile Viewer目前公开资料更偏"查看"，是明确的能力边界差异</p>
+        <p class="lang-en" hidden>· <b>Architecture philosophy</b>: Philips emphasizes vendor-neutral platforms via MDIP + the open SDC protocol; M-Connect takes a "less is more" approach — single-hub integration at lower cost</p>
+        <p class="lang-en" hidden>· <b>Mobile capability</b>: Care Assist can "act"; Mobile Viewer's public materials currently lean toward "view only" — a clear, real capability gap</p>
+      </div>
+      <div class="reveal">
+        <h3 class="lang-zh">初步观察（二）</h3><h3 class="lang-en" hidden>Initial Observations (2)</h3>
+        <p class="lang-zh">· <b>预警与告警治理</b>：Guardian/Event Notification/CDAS组合有更明确的三层治理与IEC 80001合规叙事，且有UHKC等量化案例支撑</p>
+        <p class="lang-zh">· <b>商业化打法</b>：Philips强调IDN级规模化部署（医疗集团级）；瑞智联强调六大场景打包（科室级），客户颗粒度不同</p>
+        <p class="lang-en" hidden>· <b>Early-warning &amp; alarm governance</b>: the Guardian / Event Notification / CDAS combination has a clearer three-tier governance and IEC 80001 compliance story, backed by quantified cases like UHKC</p>
+        <p class="lang-en" hidden>· <b>Go-to-market approach</b>: Philips emphasizes IDN-scale rollouts (health-system level); M-Connect emphasizes bundled six-scenario packages (department level) — the two target a different customer granularity</p>
+      </div>
+    </div>
+
+    <div id="compare-ext" class="cmp-sub reveal">
+      <h3 class="cmp-subhead"><span class="lang-zh">关键决策维度（架构之外）</span><span class="lang-en" hidden>Key Decision Factors (Beyond Architecture)</span></h3>
+      <p class="lede reveal lang-zh" style="margin-top:14px;">在架构与工作流对照之外，这十项维度常常决定患者监护生态的选型结果。"优势方"一列已如实标注——其中数项归于迈瑞，供内部客观评估。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">Beyond the architecture and workflow sections, these ten dimensions frequently decide which patient-monitoring ecosystem wins the evaluation. The Edge column is called honestly — several go to Mindray — for an objective internal read.</p>
+      <div class="tblwrap reveal">
+      <table class="cmp-table">
+        <thead><tr>
+          <th><span class="lang-zh">维度</span><span class="lang-en" hidden>Dimension</span></th>
+          <th class="th-red">瑞智联 / M-Connect</th>
+          <th class="th-blue">Philips Connected Care</th>
+          <th><span class="lang-zh">优势方</span><span class="lang-en" hidden>Edge</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td><span class="rn">01</span> <span class="lang-zh">互操作性与锁定</span><span class="lang-en" hidden>Interoperability & lock-in</span></td><td><span class="lang-zh">在全迈瑞环境（BeneVision CMS、BeneLink）中最强；第三方设备接入较有限；SDC 参与增加，但生态仍偏专有。</span><span class="lang-en" hidden>Strongest in all-Mindray environments (BeneVision CMS, BeneLink); limited third-party device ingestion; growing SDC participation but still largely proprietary.</span></td><td><span class="lang-zh">强调开放标准（SDC）；通过 Capsule MDIP + IntelliBridge 广泛接入多厂商设备；可纳入竞品设备。</span><span class="lang-en" hidden>Open-standards emphasis (SDC); broad multi-vendor connectivity via Capsule MDIP + IntelliBridge; built to ingest competitor devices.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span></td></tr>
+          <tr><td><span class="rn">02</span> <span class="lang-zh">EMR/HIS 集成深度</span><span class="lang-en" hidden>EMR/HIS integration depth</span></td><td><span class="lang-zh">与国内 HIS 深度集成；eGateway 数据导出；本土市场契合度高。</span><span class="lang-en" hidden>Deep domestic (CN) HIS integration; eGateway export; strong home-market fit.</span></td><td><span class="lang-zh">成熟的 Epic/Cerner、ICCA、IHE PCD 支持；全球 EMR 认证；部分国内 HIS 集成较浅。</span><span class="lang-en" hidden>Mature Epic/Cerner, ICCA, IHE PCD; global EMR certifications; can be shallower with some domestic CN HIS.</span></td><td><span class="edge-badge b-split"><span class="lang-zh">各有所长</span><span class="lang-en" hidden>Split</span></span><span class="edge-note"><span class="lang-zh">全球看 Philips，国内 HIS 看迈瑞。</span><span class="lang-en" hidden>Philips globally, Mindray for domestic CN HIS.</span></span></td></tr>
+          <tr><td><span class="rn">03</span> <span class="lang-zh">总体拥有成本 (TCO)</span><span class="lang-en" hidden>Total cost of ownership</span></td><td><span class="lang-zh">采购与授权成本较低；打包积极；性价比强。</span><span class="lang-en" hidden>Lower acquisition + licensing; aggressive bundling; strong price-performance.</span></td><td><span class="lang-zh">定价偏高端；模块化授权累积成本。</span><span class="lang-en" hidden>Premium list price; modular licensing accumulates.</span></td><td><span class="edge-badge b-mindray"><span class="lang-zh">迈瑞 Mindray</span><span class="lang-en" hidden>Mindray</span></span></td></tr>
+          <tr><td><span class="rn">04</span> <span class="lang-zh">网络安全与法规</span><span class="lang-en" hidden>Cybersecurity & regulatory</span></td><td><span class="lang-zh">已获 NMPA；国际认证增长中；符合 IEC 80001；PIPL 原生，利于国内数据驻留。</span><span class="lang-en" hidden>NMPA-cleared; growing international certs; IEC 80001 alignment; PIPL-native for CN data residency.</span></td><td><span class="lang-zh">广泛的 FDA/CE/NMPA 覆盖；成熟网安体系；HIPAA/GDPR 就绪。</span><span class="lang-en" hidden>Broad FDA/CE/NMPA footprint; mature cyber program; established HIPAA/GDPR posture.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span><span class="edge-note"><span class="lang-zh">全球看 Philips；国内数据驻留迈瑞更简。核实各模块当前许可。</span><span class="lang-en" hidden>Philips globally; Mindray simpler for CN residency. Validate current per-module clearances.</span></span></td></tr>
+          <tr><td><span class="rn">05</span> <span class="lang-zh">报警管理与疲劳缓解</span><span class="lang-en" hidden>Alarm management & fatigue</span></td><td><span class="lang-zh">具备报警路由、升级及经瑞智联的二次通知。</span><span class="lang-en" hidden>Routing, escalation and secondary notification via M-Connect.</span></td><td><span class="lang-zh">Care Assist / Event Notification；成熟升级与设备端二次报警；明确关注报警缩减。</span><span class="lang-en" hidden>Care Assist / Event Notification; mature escalation, secondary alerts to devices; explicit alarm-reduction focus.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span><span class="edge-note"><span class="lang-zh">需以证据支撑。</span><span class="lang-en" hidden>Back with evidence.</span></span></td></tr>
+          <tr><td><span class="rn">06</span> <span class="lang-zh">临床证据与装机量</span><span class="lang-en" hidden>Clinical evidence & installed base</span></td><td><span class="lang-zh">装机量大且快速增长（国内 + 新兴市场）；同行评审结果较少。</span><span class="lang-en" hidden>Large, fast-growing base (CN + emerging markets); thinner peer-reviewed outcomes.</span></td><td><span class="lang-zh">广泛的 IDN 级参考案例与已发表结果。</span><span class="lang-en" hidden>Extensive IDN-scale references and published outcomes.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span></td></tr>
+          <tr><td><span class="rn">07</span> <span class="lang-zh">分析 / 临床决策支持成熟度</span><span class="lang-en" hidden>Analytics / CDS maturity</span></td><td><span class="lang-zh">EWS / 恶化预警工具成熟中；CDAS。</span><span class="lang-en" hidden>EWS / deterioration tools maturing; CDAS.</span></td><td><span class="lang-zh">Guardian Solution；经验证的 EWS / 恶化算法；更长的积累。</span><span class="lang-en" hidden>Guardian Solution; validated EWS / deterioration algorithms; longer track record.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span></td></tr>
+          <tr><td><span class="rn">08</span> <span class="lang-zh">服务与本地化</span><span class="lang-en" hidden>Service & local presence</span></td><td><span class="lang-zh">国内现场服务网络密集、响应快、主场优势。</span><span class="lang-en" hidden>Dense CN field-service network; fast response; home advantage.</span></td><td><span class="lang-zh">全球服务组织；实力强，但在部分国内地区成本更高 / 响应较慢。</span><span class="lang-en" hidden>Global service org; strong but potentially costlier / slower in some CN regions.</span></td><td><span class="edge-badge b-mindray"><span class="lang-zh">迈瑞 Mindray</span><span class="lang-en" hidden>Mindray</span></span><span class="edge-note"><span class="lang-zh">限国内市场。</span><span class="lang-en" hidden>In China.</span></span></td></tr>
+          <tr><td><span class="rn">09</span> <span class="lang-zh">路线图与厂商可持续性</span><span class="lang-en" hidden>Roadmap & vendor viability</span></td><td><span class="lang-zh">资本充足、研发投入激进、发布节奏快；地缘 / 出口风险需关注。</span><span class="lang-en" hidden>Well-capitalized, aggressive R&D, rapid cadence; geopolitical / export exposure to watch.</span></td><td><span class="lang-zh">成熟广泛的产品组合；互联医疗投入稳定；同样面临地缘约束。</span><span class="lang-en" hidden>Established broad portfolio; steady connected-care investment; also geopolitically exposed.</span></td><td><span class="edge-badge b-even"><span class="lang-zh">势均力敌</span><span class="lang-en" hidden>Even</span></span><span class="edge-note"><span class="lang-zh">两者均可持续，风险画像不同。</span><span class="lang-en" hidden>Both viable; different risk profiles.</span></span></td></tr>
+          <tr><td><span class="rn">10</span> <span class="lang-zh">可扩展性与业务连续性</span><span class="lang-en" hidden>Scalability & continuity</span></td><td><span class="lang-zh">在迈瑞标准化环境内可扩展；企业级参考增长中。</span><span class="lang-en" hidden>Scales within Mindray-standardized environments; growing enterprise references.</span></td><td><span class="lang-zh">经验证的 IDN 级部署；成熟的冗余 / 故障切换。</span><span class="lang-en" hidden>Proven IDN-wide deployments; mature redundancy / failover.</span></td><td><span class="edge-badge b-philips"><span class="lang-zh">Philips</span><span class="lang-en" hidden>Philips</span></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+      <div class="ext-note reveal">
+      <span class="lang-zh"><b>说明：</b>第 4、5、7 行取决于会随时间变化的具体项（各模块当前认证/许可状态、报警缩减证据、算法验证）。在对照各厂商最新文档核实前，请将这些结论视为方向性判断。</span>
+      <span class="lang-en" hidden><b>Note:</b> Rows 4, 5 and 7 hinge on specifics that shift — current per-module certification/clearance status, alarm-reduction evidence, and algorithm validation. Treat these edges as directional until validated against each vendor's current documentation.</span>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 APPENDIX (always both) ============ -->
+<section id="appendix" class="divider">
+  <div class="wrap">
+    <div class="eyebrow neutral reveal">09 · Appendix</div>
+    <h2 class="reveal"><span class="lang-zh">信息来源置信度 &amp; 下一步行动</span><span class="lang-en" hidden>Source Confidence &amp; Next Steps</span></h2>
+    <p class="lede reveal lang-zh" style="margin-top:14px;">整合自两份原始报告的附录B，双方信息一并列出，供后续核实与更新参考。</p>
+    <p class="lede reveal lang-en" hidden style="margin-top:14px;">Consolidated from Appendix B of both original reports; both vendors' information is listed together for future verification and updates.</p>
+
+    <div class="tblwrap reveal">
+      <table class="cmp-table">
+        <thead><tr>
+          <th><span class="lang-zh">信息类别</span><span class="lang-en" hidden>Category</span></th>
+          <th><span class="lang-zh">来源类型</span><span class="lang-en" hidden>Source Type</span></th>
+          <th><span class="lang-zh">置信度</span><span class="lang-en" hidden>Confidence</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td><span class="lang-zh">瑞智联经营数据（装机/签单量）</span><span class="lang-en" hidden>M-Connect business metrics (installs / contracts)</span></td><td><span class="lang-zh">迈瑞年报、投资者关系活动记录表</span><span class="lang-en" hidden>Mindray annual report, investor-relations activity records</span></td><td><span class="lang-zh">高</span><span class="lang-en" hidden>High</span></td></tr>
+          <tr><td><span class="lang-zh">瑞智联产品能力（BeneLink/eGateway/CMS）</span><span class="lang-en" hidden>M-Connect product capabilities (BeneLink/eGateway/CMS)</span></td><td><span class="lang-zh">迈瑞官网产品页面及手册</span><span class="lang-en" hidden>Mindray official product pages and manuals</span></td><td><span class="lang-zh">高</span><span class="lang-en" hidden>High</span></td></tr>
+          <tr><td><span class="lang-zh">瑞智联软件升级/运维/云端架构</span><span class="lang-en" hidden>M-Connect software updates / ops / cloud architecture</span></td><td><span class="lang-zh">官网披露有限，基于同类逻辑推断</span><span class="lang-en" hidden>Limited public disclosure; inferred from comparable product logic</span></td><td><span class="lang-zh">低</span><span class="lang-en" hidden>Low</span></td></tr>
+          <tr><td><span class="lang-zh">Philips集团/分部营收增长数据</span><span class="lang-en" hidden>Philips group/segment revenue growth</span></td><td><span class="lang-zh">Philips财报新闻稿、第三方财经平台（部分受限于付费墙）</span><span class="lang-en" hidden>Philips earnings press releases, third-party financial platforms (some figures paywalled)</span></td><td><span class="lang-zh">中高</span><span class="lang-en" hidden>Med-high</span></td></tr>
+          <tr><td><span class="lang-zh">Philips产品能力（PIC iX/IntelliBridge/MDIP）</span><span class="lang-en" hidden>Philips product capabilities (PIC iX/IntelliBridge/MDIP)</span></td><td><span class="lang-zh">Philips官网产品页面及手册</span><span class="lang-en" hidden>Philips official product pages and manuals</span></td><td><span class="lang-zh">高</span><span class="lang-en" hidden>High</span></td></tr>
+          <tr><td><span class="lang-zh">Philips部署/安全/容灾细节</span><span class="lang-en" hidden>Philips deployment / security / DR details</span></td><td><span class="lang-zh">官网技术问答、第三方部署指南、CISA公开安全通告</span><span class="lang-en" hidden>Official technical FAQs, third-party deployment guides, public CISA advisories</span></td><td><span class="lang-zh">中高</span><span class="lang-en" hidden>Med-high</span></td></tr>
+          <tr><td><span class="lang-zh">双方临床工作流细节</span><span class="lang-en" hidden>Clinical workflow details (both)</span></td><td><span class="lang-zh">官网场景描述+归纳整理（Philips另有学术文献支持）</span><span class="lang-en" hidden>Official scenario descriptions plus synthesis (Philips also backed by academic literature)</span></td><td><span class="lang-zh">中</span><span class="lang-en" hidden>Medium</span></td></tr>
+          <tr><td><span class="lang-zh">Philips客户案例量化数据（如UHKC）</span><span class="lang-en" hidden>Philips quantified customer cases (e.g., UHKC)</span></td><td><span class="lang-zh">Philips官网案例页面，官方注明"结果因机构而异"</span><span class="lang-en" hidden>Philips official case-study pages; Philips notes "results may vary by institution"</span></td><td><span class="lang-zh">中（厂商案例）</span><span class="lang-en" hidden>Medium (vendor case study)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reveal" style="margin-top:32px;">
+      <h3 style="font-size:16.5px; margin-bottom:12px;" class="lang-zh">建议下一步行动</h3>
+      <h3 style="font-size:16.5px; margin-bottom:12px;" class="lang-en" hidden>Recommended Next Steps</h3>
+      <p class="lang-zh">· 通过CMEF等展会/经销商渠道获取瑞智联最新技术白皮书及案例集</p>
+      <p class="lang-zh">· 通过Philips官方客户经理获取Connected Care分部更精确营收数据，并申请PIC iX/Care Assist产品演示</p>
+      <p class="lang-zh">· 核实双方移动端操作权限、云端数据架构、软件升级机制等本文未能覆盖的细节</p>
+      <p class="lang-zh">· 结合ProductA跨设备互联能力，分别与BeneLink"监护仪即Hub"模式、IntelliBridge两级模式对标，评估差异化机会点</p>
+      <p class="lang-en" hidden>· Obtain M-Connect's latest technical white papers and case studies via CMEF or distributor channels</p>
+      <p class="lang-en" hidden>· Get more precise Connected Care segment revenue data through a Philips account manager, and request a PIC iX / Care Assist demo</p>
+      <p class="lang-en" hidden>· Verify details not covered here — mobile action permissions, cloud data architecture, software-update mechanisms — for both vendors</p>
+      <p class="lang-en" hidden>· Benchmark ProductA's cross-device connectivity against BeneLink's "monitor-as-hub" model and IntelliBridge's two-tier model to assess differentiation opportunities</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="eyebrow neutral" style="margin-bottom:16px;">Sources &amp; Notes</div>
+    <div class="src lang-zh">
+      资料来源（瑞智联）：迈瑞医疗2024年年报公开报道；迈瑞2024年半年度投资者关系活动记录表（证券代码300760，编号2024-008）；迈瑞官网BeneLink/eGateway/BeneVision CMS/N系列/BeneFusion n系列产品页面与手册；瑞智联重症解决方案官网页面；动脉网关于"启元重症大模型"的报道。<br>
+      资料来源（Philips）：Philips官网PIC iX/IntelliBridge Bedside-System-Enterprise/Capsule MDIP/IntelliVue Guardian Solution/Enterprise Monitoring/IDN-wide Patient Monitoring/ICCA/Enterprise Monitoring as a Service（UHKC案例）等产品与案例页面；Philips 2025年季度财报新闻稿；PitchBook/Statista第三方财经平台；PMC/NCBI学术研究；CISA公开安全通告（ICSMA-21-322-02）；第三方托管的PIIC iX部署指南。
+    </div>
+    <div class="src lang-en" hidden>
+      Sources (M-Connect): Mindray's 2024 annual report as publicly reported; Mindray's H1 2024 investor-relations activity record (stock code 300760, filing 2024-008); Mindray's official BeneLink / eGateway / BeneVision CMS / N Series / BeneFusion n Series product pages and manuals; the M-Connect critical-care solution page; DVBio (动脉网) reporting on the "Qiyuan" critical-care large language model.<br>
+      Sources (Philips): Philips' official PIC iX / IntelliBridge Bedside-System-Enterprise / Capsule MDIP / IntelliVue Guardian Solution / Enterprise Monitoring / IDN-wide Patient Monitoring / ICCA / Enterprise Monitoring as a Service (UHKC case study) product and case pages; Philips' 2025 quarterly earnings press releases; PitchBook/Statista third-party financial platforms; PMC/NCBI academic research; a public CISA advisory (ICSMA-21-322-02); a third-party-hosted PIIC iX deployment guide.
+    </div>
+    <div class="disclaim lang-zh">
+      说明：本页面为基于公开资料整理绘制的示意可视化，架构图、时间线与对比表为归纳整理后的呈现方式，并非迈瑞或Philips官方发布的原始图表；具体产品能力、接口规格及部署细节请以各自官方最新资料或产品演示为准。客户案例数据为厂商官方材料，Philips官方注明"结果因机构而异"。本页面仅用于内部竞品理解与产品规划参考。
+    </div>
+    <div class="disclaim lang-en" hidden>
+      Note: this page is an illustrative visualization compiled from public materials. The diagrams, timelines, and comparison tables are synthesized presentations, not official charts published by Mindray or Philips; refer to each vendor's latest official materials or a product demo for specific capabilities, interface specifications, and deployment details. Customer case data comes from vendor materials, and Philips notes that "results may vary by institution." This page is for internal competitive understanding and product-planning reference only.
+    </div>
+    <div class="theme-note lang-zh">视觉主题：瑞智联红取自Mindray Brand Book V1.2（Pantone 187C / #C7000B）；Philips蓝取自Philips品牌识别指南（Pantone 300C / #0B5ED7），经多方品牌色档案交叉核实；中性灰阶为设计延伸配色，非厂商官方发布数值；页面配色随上方切换按钮动态改变强调色。</div>
+    <div class="theme-note lang-en" hidden>Visual theme: the M-Connect red is taken from the Mindray Brand Book V1.2 (Pantone 187C / #C7000B); the Philips blue is taken from Philips' brand identity guide (Pantone 300C / #0B5ED7), cross-checked against multiple brand-color archives. Neutral grays are a designer-extended palette, not official published values. The page's accent color changes dynamically with the toggle above.</div>
+    <div class="brand mono">M-CONNECT × CONNECTED CARE · SOLUTION ARCHITECTURE COMPARISON · INTERNAL REFERENCE</div>
+  </div>
+</footer>
+
+<script>
+let REDUCED = false;
+try { REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch(e) { REDUCED = false; }
+
+/* ---------------- vendor toggle ---------------- */
+function setVendor(v){
+  document.body.className = 'vendor-' + v;
+  document.querySelectorAll('.vt-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.vendor === v);
+  });
+  document.querySelectorAll('.vendor-block').forEach(el=>{
+    el.classList.toggle('vb-active', el.dataset.vendor === v);
+  });
+  const label = document.getElementById('exec-vendor-label');
+  if(label) label.textContent = v === 'mindray' ? '瑞智联 M-Connect' : 'Philips Connected Care';
+  const labelEn = document.getElementById('exec-vendor-label-en');
+  if(labelEn) labelEn.textContent = v === 'mindray' ? 'M-Connect' : 'Philips Connected Care';
+}
+document.querySelectorAll('.vt-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> setVendor(btn.dataset.vendor));
+});
+
+/* ---------------- language toggle ---------------- */
+function setLang(lang){
+  document.querySelectorAll('.lang-zh').forEach(el=>{ el.hidden = (lang !== 'zh'); });
+  document.querySelectorAll('.lang-en').forEach(el=>{ el.hidden = (lang !== 'en'); });
+  document.querySelectorAll('.lt-btn').forEach(b=>{ b.classList.toggle('active', b.dataset.lang === lang); });
+  document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : 'en';
+}
+document.querySelectorAll('.lt-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> setLang(btn.dataset.lang));
+});
+
+/* ---------------- scroll rail ---------------- */
+const railFill = document.getElementById('rail-fill');
+function updateRail(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  railFill.style.height = (max>0 ? (h.scrollTop/max*100) : 0) + '%';
+}
+document.addEventListener('scroll', updateRail, {passive:true});
+updateRail();
+
+/* ---------------- reveal on scroll ---------------- */
+const revealEls = document.querySelectorAll('.reveal');
+try {
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); } });
+  }, {threshold:.15});
+  revealEls.forEach((el)=>{ io.observe(el); });
+} catch(e) {
+  revealEls.forEach((el)=>{ el.classList.add('in'); });
+}
+
+/* ---------------- quick nav scroll-spy ---------------- */
+const navLinks = Array.from(document.querySelectorAll('#navrow a'));
+const navSections = navLinks.map(a=>document.querySelector(a.getAttribute('href')));
+try {
+  const navObs = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{
+      if(en.isIntersecting){
+        const idx = navSections.indexOf(en.target);
+        navLinks.forEach(l=>l.classList.remove('active'));
+        if(idx>-1) navLinks[idx].classList.add('active');
+      }
+    });
+  }, {threshold:0, rootMargin:'-40% 0px -50% 0px'});
+  navSections.forEach(s=>{ if(s) navObs.observe(s); });
+} catch(e) {}
+
+/* ================= ARCHITECTURE DIAGRAM (generic bilingual builder) ================= */
+function bl(zh, en){ return `<span class="lang-zh">${zh}</span><span class="lang-en" hidden>${en}</span>`; }
+
+function buildArchDiagram(containerId, accentHex, cfg){
+  const holder = document.getElementById(containerId);
+  const W = 1200, H = 620;
+  function sizeHolder(){ if(holder.clientWidth) holder.style.height = (holder.clientWidth * H / W) + 'px'; }
+  sizeHolder();
+  window.addEventListener('resize', sizeHolder);
+  const pct = (v,total)=> (v/total*100).toFixed(2)+'%';
+  const {devices, link, mon, cms, gw, his, remoteBranch, dataBranch} = cfg;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  devices.forEach((s,i)=>{
+    svg += `<path id="${containerId}-dsrc${i}" d="M${s.x+76},${s.y} C ${s.x+150},${s.y} ${link.x-140},${link.y} ${link.x-56},${link.y}" fill="none" stroke="#dde1e5" stroke-width="1.6"/>`;
+  });
+  const chain = [[link,mon],[mon,cms],[cms,gw],[gw,his]];
+  chain.forEach((pair,i)=>{
+    const [a,b] = pair;
+    svg += `<path id="${containerId}-chain${i}" d="M${a.x+72},${a.y} C ${a.x+130},${a.y} ${b.x-130},${b.y} ${b.x-72},${b.y}" fill="none" stroke="#dde1e5" stroke-width="1.6"/>`;
+  });
+  svg += `<path id="${containerId}-branchA" d="M${cms.x},${cms.y+34} C ${cms.x},${cms.y+90} ${remoteBranch.x},${remoteBranch.y-90} ${remoteBranch.x},${remoteBranch.y-34}" fill="none" stroke="${accentHex}33" stroke-width="1.4" stroke-dasharray="4 5"/>`;
+  svg += `<path id="${containerId}-branchB" d="M${his.x},${his.y+34} C ${his.x},${his.y+90} ${dataBranch.x},${dataBranch.y-90} ${dataBranch.x},${dataBranch.y-34}" fill="none" stroke="${accentHex}33" stroke-width="1.4" stroke-dasharray="4 5"/>`;
+
+  if(!REDUCED){
+    devices.forEach((s,i)=>{
+      svg += `<circle r="4.2" fill="${accentHex}" style="filter:drop-shadow(0 0 3px ${accentHex}88)"><animateMotion dur="${2.4+i*0.3}s" begin="${i*0.35}s" repeatCount="indefinite"><mpath href="#${containerId}-dsrc${i}"/></animateMotion></circle>`;
+    });
+    chain.forEach((pair,i)=>{
+      svg += `<circle r="4.6" fill="${accentHex}" style="filter:drop-shadow(0 0 4px ${accentHex}88)"><animateMotion dur="1.7s" begin="${1.1+i*0.5}s" repeatCount="indefinite"><mpath href="#${containerId}-chain${i}"/></animateMotion></circle>`;
+    });
+    svg += `<circle r="3.6" fill="${accentHex}" opacity="0.55"><animateMotion dur="2.4s" begin="0.6s" repeatCount="indefinite"><mpath href="#${containerId}-branchA"/></animateMotion></circle>`;
+    svg += `<circle r="3.6" fill="${accentHex}" opacity="0.55"><animateMotion dur="2.4s" begin="1.4s" repeatCount="indefinite"><mpath href="#${containerId}-branchB"/></animateMotion></circle>`;
+  }
+  svg += `</svg>`;
+  holder.innerHTML = svg;
+
+  function addNode(n, extraCls){
+    const div = document.createElement('div');
+    div.className = 'node ' + extraCls;
+    if(extraCls==='hub') div.style.borderTop = '3px solid ' + accentHex;
+    if(extraCls==='branch'){ div.style.border = '1px dashed ' + accentHex+'55'; div.style.borderTop = '3px dashed ' + accentHex+'55'; }
+    div.style.left = pct(n.x, W); div.style.top = pct(n.y, H);
+    const tagColor = extraCls==='hub' ? accentHex : (extraCls==='branch' ? accentHex : (extraCls==='platform' ? '#5c6672' : '#a7afb8'));
+    div.innerHTML = `<div class="tag mono" style="color:${tagColor}">${n.tag}</div><div class="nm">${bl(n.nmZh, n.nmEn)}</div><div class="sm">${bl(n.smZh, n.smEn)}</div>`;
+    holder.appendChild(div);
+  }
+  devices.forEach(d=>addNode(d,'device'));
+  addNode(link,'hub'); addNode(mon,'hub');
+  addNode(cms,'platform'); addNode(gw,'platform'); addNode(his,'platform');
+  addNode(remoteBranch,'branch'); addNode(dataBranch,'branch');
+}
+
+buildArchDiagram('diagram-mindray', '#c7000b', {
+  devices: [
+    {x:95,  y:150, tag:'DEVICE', nmZh:'呼吸机', nmEn:'Ventilator', smZh:'流量 / 容量 / PEEP', smEn:'Flow / volume / PEEP'},
+    {x:95,  y:310, tag:'DEVICE', nmZh:'麻醉机 / 麻醉系统', nmEn:'Anesthesia machine / system', smZh:'吸入浓度 / 报警', smEn:'Inhaled concentration / alarms'},
+    {x:95,  y:470, tag:'DEVICE', nmZh:'输注泵 BeneFusion', nmEn:'BeneFusion infusion pump', smZh:'速率 / 剩余量 / 药名', smEn:'Rate / volume left / drug name'},
+  ],
+  link: {x:320, y:310, tag:'CONNECT', nmZh:'BeneLink', nmEn:'BeneLink', smZh:'4×RJ-45 · 协议转换', smEn:'4×RJ-45 · protocol conversion'},
+  mon:  {x:540, y:310, tag:'HUB', nmZh:'BeneVision 监护仪', nmEn:'BeneVision monitor', smZh:'集成窗口 · 统一呈现', smEn:'Integration window · unified view'},
+  cms:  {x:760, y:310, tag:'PLATFORM', nmZh:'BeneVision CMS', nmEn:'BeneVision CMS', smZh:'CentralStation / WorkStation', smEn:'CentralStation / WorkStation'},
+  gw:   {x:970, y:310, tag:'PLATFORM', nmZh:'eGateway', nmEn:'eGateway', smZh:'HL7 / IHE PCD 单管道', smEn:'HL7 / IHE PCD single pipe'},
+  his:  {x:1160,y:310, tag:'ENTERPRISE', nmZh:'HIS / EMR / CIS', nmEn:'HIS / EMR / CIS', smZh:'医院信息系统', smEn:'Hospital information systems'},
+  remoteBranch: {x:760, y:500, tag:'BRANCH', nmZh:'远程 / 移动访问', nmEn:'Remote / mobile access', smZh:'CMS Viewer · Mobile Viewer', smEn:'CMS Viewer · Mobile Viewer'},
+  dataBranch:   {x:1160,y:500, tag:'BRANCH', nmZh:'设备全息数据库', nmEn:'Device data repository', smZh:'科研分析 · AI 应用', smEn:'Research analytics · AI applications'},
+});
+
+buildArchDiagram('diagram-philips', '#0b5ed7', {
+  devices: [
+    {x:95,  y:150, tag:'DEVICE', nmZh:'呼吸机', nmEn:'Ventilator', smZh:'压力 / 容量 / 波形', smEn:'Pressure / volume / waveform'},
+    {x:95,  y:310, tag:'DEVICE', nmZh:'麻醉机 / 麻醉系统', nmEn:'Anesthesia machine / system', smZh:'吸入浓度 / 报警', smEn:'Inhaled concentration / alarms'},
+    {x:95,  y:470, tag:'DEVICE', nmZh:'输注泵 / 多参数设备', nmEn:'Infusion pump / multi-param device', smZh:'速率 / 剩余量 / 参数', smEn:'Rate / volume left / parameters'},
+  ],
+  link: {x:320, y:310, tag:'CONNECT', nmZh:'IntelliBridge Bedside', nmEn:'IntelliBridge Bedside', smZh:'≤4台设备 · POC床旁集成', smEn:'≤4 devices · point-of-care'},
+  mon:  {x:540, y:310, tag:'HUB', nmZh:'IntelliVue 监护仪', nmEn:'IntelliVue monitor', smZh:'6000/MX 系列 · 统一呈现', smEn:'6000/MX Series · unified view'},
+  cms:  {x:760, y:310, tag:'PLATFORM', nmZh:'PIC iX + Capsule MDIP', nmEn:'PIC iX + Capsule MDIP', smZh:'中央平台第4代 · 第三方接入', smEn:'Gen-4 central platform · 3rd-party access'},
+  gw:   {x:970, y:310, tag:'PLATFORM', nmZh:'IntelliBridge Enterprise', nmEn:'IntelliBridge Enterprise', smZh:'HL7/FHIR · IHE PCD', smEn:'HL7/FHIR · IHE PCD'},
+  his:  {x:1160,y:310, tag:'ENTERPRISE', nmZh:'HIS / EMR / ADT', nmEn:'HIS / EMR / ADT', smZh:'医院信息系统', smEn:'Hospital information systems'},
+  remoteBranch: {x:760, y:500, tag:'BRANCH', nmZh:'Care Assist / Event Notification', nmEn:'Care Assist / Event Notification', smZh:'移动确认告警 · 第三方路由', smEn:'Mobile alarm ack · 3rd-party routing'},
+  dataBranch:   {x:1160,y:500, tag:'BRANCH', nmZh:'Guardian Solution / ICCA', nmEn:'Guardian Solution / ICCA', smZh:'早期预警 · 重症文书 → Insights', smEn:'Early warning · critical-care docs → Insights'},
+});
+
+/* ================= CLINICAL WORKFLOW (generic bilingual tabbed builder) ================= */
+function buildTrack(id, steps){
+  const track = document.getElementById(id);
+  track.innerHTML = '<div class="tl-line"><div class="tl-line-fill"></div></div>';
+  steps.forEach((s,i)=>{
+    const el = document.createElement('div');
+    el.className = 'tl-step';
+    el.innerHTML = `<div class="tl-dot mono">${i+1}</div><div class="tl-body"><div class="t">${bl(s.tZh,s.tEn)}</div><div class="d">${bl(s.dZh,s.dEn)}</div></div>`;
+    track.appendChild(el);
+  });
+  return track;
+}
+function playTrack(track){
+  const steps = track.querySelectorAll('.tl-step');
+  const fill = track.querySelector('.tl-line-fill');
+  steps.forEach(s=>s.classList.remove('on'));
+  fill.style.width = '0%';
+  steps.forEach((el,i)=>{
+    setTimeout(()=>{ el.classList.add('on'); fill.style.width = ((i+1)/steps.length*100) + '%'; }, i*350);
+  });
+}
+function setupWorkflow(prefix, tabsId, wrapId, data){
+  const tracks = {};
+  Object.keys(data).forEach(key=>{ tracks[key] = buildTrack(`tl-track-${prefix}-${key}`, data[key]); });
+  document.querySelectorAll(`#${tabsId} .tab-btn`).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.tab;
+      document.querySelectorAll(`#${tabsId} .tab-btn`).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.keys(tracks).forEach(k=>{ tracks[k].style.display = (k===key) ? 'flex' : 'none'; });
+      playTrack(tracks[key]);
+    });
+  });
+  try {
+    let triggered = false;
+    const obs = new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{ if(en.isIntersecting && !triggered){ triggered = true; playTrack(tracks.icu); } });
+    }, {threshold:.3});
+    obs.observe(document.getElementById(wrapId));
+  } catch(e) { playTrack(tracks.icu); }
+  return tracks;
+}
+
+setupWorkflow('mindray', 'wf-tabs-mindray', 'tl-wrap-mindray', {
+  icu: [
+    {tZh:'入科同步', tEn:'Admission sync', dZh:'ADT患者信息经eGateway下发至监护仪', dEn:'ADT patient info pushed to the monitor via eGateway'},
+    {tZh:'设备接入', tEn:'Device onboarding', dZh:'BeneLink汇聚呼吸机/输注泵/血气数据', dEn:'BeneLink aggregates ventilator / infusion pump / blood-gas data'},
+    {tZh:'统一报警', tEn:'Unified alarms', dZh:'护士站/医生办公室WorkStation集中呈现', dEn:'Centralized on nurse-station / physician-office WorkStations'},
+    {tZh:'交接班', tEn:'Shift handoff', dZh:'新班次经CMS Viewer/Mobile Viewer快速掌握全貌', dEn:'Incoming shift gets a fast overview via CMS Viewer/Mobile Viewer'},
+    {tZh:'远程指导', tEn:'Remote guidance', dZh:'专家院外经Mobile Viewer查看并指导抢救', dEn:'Off-site experts view via Mobile Viewer to guide resuscitation'},
+    {tZh:'科研沉淀', tEn:'Research archival', dZh:'数据汇入设备全息数据库，支持科研与质控', dEn:'Data flows into the device data repository for research and QA'},
+  ],
+  or: [
+    {tZh:'转入手术室', tEn:'Transfer to OR', dZh:'N1模块兼作转运监护仪，附件无需重新连接', dEn:'N1 module doubles as a transport monitor; accessories need no reconnection'},
+    {tZh:'麻醉诱导', tEn:'Anesthesia induction', dZh:'AnaeSight联动麻醉机、监护仪与输注泵', dEn:'AnaeSight links the anesthesia machine, monitor, and infusion pump'},
+    {tZh:'术中监护', tEn:'Intraoperative monitoring', dZh:'静吸复合麻醉统一操作，输注数据同屏可见', dEn:'Unified control of combined IV/inhalation anesthesia; infusion data on the same screen'},
+    {tZh:'麻醉复苏', tEn:'Anesthesia recovery', dZh:'监护数据随患者转移保持连续', dEn:'Monitoring data stays continuous as the patient moves'},
+    {tZh:'转回病房', tEn:'Transfer back to ward', dZh:'附件与监护数据不中断', dEn:'Accessories and monitoring data are not interrupted'},
+    {tZh:'病历汇总', tEn:'Record consolidation', dZh:'围术期全程数据经eGateway归档至EMR', dEn:'The full perioperative record archives to the EMR via eGateway'},
+  ],
+  er: [
+    {tZh:'分诊 Triage', tEn:'Triage', dZh:'患者到达急诊，启动初步评估', dEn:'Patient arrives at the ED; initial assessment begins'},
+    {tZh:'生命体征采集', tEn:'Vitals capture', dZh:'监护设备采集基础生理参数', dEn:'Monitoring devices capture baseline physiological parameters'},
+    {tZh:'EWS计算', tEn:'EWS calculation', dZh:'系统计算早期预警评分', dEn:'The system computes an Early Warning Score'},
+    {tZh:'优先级分级', tEn:'Priority tiering', dZh:'按评分结果确定处置优先顺序', dEn:'Treatment priority is set based on the score'},
+    {tZh:'处置', tEn:'Treatment', dZh:'医护按分级开展相应急诊处置', dEn:'Staff carry out ED treatment according to the tier'},
+    {tZh:'转入ICU/病房', tEn:'Transfer to ICU/ward', dZh:'视病情转入相应科室，数据同步转移', dEn:'Patient transfers to the appropriate unit; data moves with them'},
+  ],
+  ward: [
+    {tZh:'护士巡视', tEn:'Nurse rounds', dZh:'按排班对病房患者例行巡视', dEn:'Scheduled routine rounds on ward patients'},
+    {tZh:'扫码确认身份', tEn:'Scan to verify ID', dZh:'腕带扫码核对患者身份信息', dEn:'Wristband scan confirms patient identity'},
+    {tZh:'生命体征采集', tEn:'Vitals capture', dZh:'含人工输入的Spot Check数据', dEn:'Includes manually entered spot-check data'},
+    {tZh:'自动上传EMR', tEn:'Auto-upload to EMR', dZh:'数据经eGateway自动同步病历系统', dEn:'Data syncs automatically to the EMR via eGateway'},
+    {tZh:'EWS触发报警', tEn:'EWS-triggered alarm', dZh:'预警评分异常时分级报警', dEn:'Tiered alarms fire when the warning score is abnormal'},
+    {tZh:'移动端处理', tEn:'Mobile response', dZh:'医护通过手机/平板查看并响应', dEn:'Staff view and respond via phone/tablet'},
+  ],
+});
+
+setupWorkflow('philips', 'wf-tabs-philips', 'tl-wrap-philips', {
+  icu: [
+    {tZh:'持续采集', tEn:'Continuous capture', dZh:'Guardian软件持续接收监护数据', dEn:'Guardian Software continuously receives monitoring data'},
+    {tZh:'预警计算', tEn:'Warning calculation', dZh:'计算Early Warning Score', dEn:'Computes the Early Warning Score'},
+    {tZh:'自动复测', tEn:'Auto re-check', dZh:'异常时触发复测，降低误报率', dEn:'Triggers a re-check on anomalies to reduce false alarms'},
+    {tZh:'告警路由', tEn:'Alarm routing', dZh:'经IntelliBridge Enterprise/Event Notification分发', dEn:'Routed via IntelliBridge Enterprise / Event Notification'},
+    {tZh:'移动通知', tEn:'Mobile notification', dZh:'Care Assist通知责任护士，CDAS确认送达', dEn:'Care Assist notifies the responsible nurse; CDAS confirms delivery'},
+    {tZh:'归档分析', tEn:'Archive &amp; analyze', dZh:'数据归档，Clinical Insights Manager支持回顾分析', dEn:'Data is archived; Clinical Insights Manager supports retrospective analysis'},
+  ],
+  or: [
+    {tZh:'术前评估', tEn:'Pre-op assessment', dZh:'Visual Patient Avatar辅助识别术前状态（试点阶段）', dEn:'Visual Patient Avatar helps assess pre-op status (pilot stage)'},
+    {tZh:'麻醉诱导', tEn:'Anesthesia induction', dZh:'ICCA记录围术期结构化数据', dEn:'ICCA records structured perioperative data'},
+    {tZh:'术中监护', tEn:'Intraoperative monitoring', dZh:'生理参数可视化，辅助快速识别异常', dEn:'Visualized parameters help quickly spot anomalies'},
+    {tZh:'麻醉复苏', tEn:'Anesthesia recovery', dZh:'监护数据持续记录不中断', dEn:'Monitoring data records continuously, uninterrupted'},
+    {tZh:'转运衔接', tEn:'Transport handoff', dZh:'IntelliVue X3延续监护，兼具床旁与转运角色', dEn:'IntelliVue X3 continues monitoring, doubling as bedside and transport'},
+    {tZh:'转回病房', tEn:'Transfer back to ward', dZh:'数据连续转入病房或ICU系统', dEn:'Data transfers continuously into the ward or ICU system'},
+  ],
+  er: [
+    {tZh:'患者到达', tEn:'Patient arrival', dZh:'急诊分诊评估启动', dEn:'ED triage assessment begins'},
+    {tZh:'生命体征采集', tEn:'Vitals capture', dZh:'纳入PIC iX监护网络', dEn:'Brought into the PIC iX monitoring network'},
+    {tZh:'EWS计算', tEn:'EWS calculation', dZh:'与病房共享同一套Guardian预警逻辑', dEn:'Shares the same Guardian warning logic as the ward'},
+    {tZh:'优先级判断', tEn:'Priority assessment', dZh:'辅助分诊优先级排序', dEn:'Helps rank triage priority'},
+    {tZh:'处置', tEn:'Treatment', dZh:'医护按分级开展相应处置', dEn:'Staff treat according to the assigned tier'},
+    {tZh:'转科衔接', tEn:'Unit handoff', dZh:'数据随患者转入ICU/病房/手术室', dEn:'Data follows the patient into ICU / ward / OR'},
+  ],
+  ward: [
+    {tZh:'生命体征采集', tEn:'Vitals capture', dZh:'监护设备持续或Spot-check采集', dEn:'Continuous or spot-check capture by monitoring devices'},
+    {tZh:'预警评分计算', tEn:'Warning-score calculation', dZh:'Guardian Software计算Early Warning Score', dEn:'Guardian Software computes the Early Warning Score'},
+    {tZh:'偏移复核', tEn:'Deviation re-check', dZh:'按设定间隔自动触发复测，降低误报', dEn:'Auto re-checks at set intervals to reduce false alarms'},
+    {tZh:'告警路由', tEn:'Alarm routing', dZh:'经IntelliBridge Enterprise/Event Notification分发', dEn:'Routed via IntelliBridge Enterprise / Event Notification'},
+    {tZh:'移动端升级', tEn:'Mobile escalation', dZh:'Care Assist/寻呼通知责任护士，CDAS确认送达', dEn:'Care Assist / paging notifies the nurse; CDAS confirms delivery'},
+    {tZh:'记录与延伸', tEn:'Record &amp; extend', dZh:'归档至EMR；可延伸至Guardian+eTrAC居家远程监护', dEn:'Archived to the EMR; can extend to Guardian+eTrAC home remote monitoring'},
+  ],
+});
+
+/* ================= GENERIC BILINGUAL CARD GRID BUILDER ================= */
+function buildCardGrid(containerId, items, cardClass){
+  const grid = document.getElementById(containerId);
+  items.forEach((it)=>{
+    const el = document.createElement('div');
+    el.className = cardClass;
+    el.innerHTML = `${it.tag ? `<div class="role mono">${it.tag}</div>` : ''}<div class="name">${bl(it.nameZh, it.nameEn)}</div><div class="desc">${bl(it.descZh, it.descEn)}</div>`;
+    grid.appendChild(el);
+  });
+}
+
+buildCardGrid('vgrid-mindray', [
+  {tag:'PHYSICIAN', nameZh:'医生', nameEn:'Physician', descZh:'床旁一屏获取监护+呼吸+输注综合信息；可远程掌握病情、指导抢救与跨院区会诊。', descEn:'One screen at bedside for monitoring + respiratory + infusion data; enables remote status tracking, resuscitation guidance, and cross-campus consults.'},
+  {tag:'NURSE', nameZh:'护士', nameEn:'Nurse', descZh:'统一报警减少报警疲劳；交接班信息更完整；身份识别与输液闭环降低用药差错风险。', descEn:'Unified alarms reduce alarm fatigue; handoffs are more complete; ID verification and closed-loop infusion lower medication-error risk.'},
+  {tag:'BIOMED', nameZh:'生物医学工程师', nameEn:'Biomedical Engineer', descZh:'设备联网状态与运行数据集中可视，理论上有助于资产管理与故障排查（能力细节待核实）。', descEn:'Device connectivity status and operating data are centrally visible, which should help with asset management and troubleshooting (details to be verified).'},
+  {tag:'IT', nameZh:'医院信息科 / IT', nameEn:'Hospital IT', descZh:'eGateway提供单管道HL7/IHE PCD接口，降低多设备对接HIS/EMR的集成复杂度。', descEn:'eGateway provides a single-pipe HL7/IHE PCD interface, cutting the integration complexity of connecting many devices to HIS/EMR.'},
+  {tag:'MGMT', nameZh:'医院管理层', nameEn:'Hospital Management', descZh:'提升设备使用效率、降低隔离病房感染暴露风险，并提升迈瑞在院内设备生态的客户粘性。', descEn:"Improves device utilization, lowers infection-exposure risk in isolation wards, and deepens Mindray's footprint within the hospital device ecosystem."},
+  {tag:'RESEARCH', nameZh:'科研人员', nameEn:'Researchers', descZh:'设备全息数据库与医院临床数据库互补结合，降低科研数据采集与整理成本。', descEn:"The device data repository complements the hospital's clinical database, lowering the cost of collecting and organizing research data."},
+], 'vcard');
+
+buildCardGrid('vgrid-philips', [
+  {tag:'PHYSICIAN', nameZh:'医生', nameEn:'Physician', descZh:'经PIC iX获得整合Philips与非Philips设备的360度患者视图，不受设备厂商限制；ICCA提供围术期/重症结构化文书支持。', descEn:'PIC iX delivers a 360° patient view spanning Philips and non-Philips devices, unconstrained by vendor; ICCA supports structured perioperative/critical-care documentation.'},
+  {tag:'NURSE', nameZh:'护士', nameEn:'Nurse', descZh:'Care Assist移动端可直接确认告警、启停NIBP测量；Guardian自动复测机制减少误报，UHKC案例显示报警负荷显著下降。', descEn:"Care Assist mobile lets nurses acknowledge alarms and start/stop NIBP directly; Guardian's auto re-check cuts false alarms — the UHKC case shows a sharp drop in alarm load."},
+  {tag:'BIOMED', nameZh:'临床工程 / 生物医学工程师', nameEn:'Clinical / Biomedical Engineering', descZh:'远程设备运维管理方案近实时展示系统健康状态；Customer Services Portal免费提交与跟踪服务工单。', descEn:'Remote device-operations management shows system health near real time; the Customer Services Portal offers free ticket submission and tracking.'},
+  {tag:'IT', nameZh:'医院信息科 / IT', nameEn:'Hospital IT', descZh:'IntelliBridge Enterprise提供单一标准化互操作入口（HL7/FHIR/IHE PCD）；虚拟化与自有网络支持降低基础设施重复投入。', descEn:"IntelliBridge Enterprise offers one standardized interoperability entry point (HL7/FHIR/IHE PCD); virtualization and support for the hospital's own network reduce duplicate infrastructure spend."},
+  {tag:'MGMT', nameZh:'医院 / IDN 管理层', nameEn:'Hospital / IDN Leadership', descZh:'PIC iX可在整个区域医疗网络集中部署，标准化覆盖多院区、加快新单元上线速度。', descEn:'PIC iX can be deployed centrally across an entire IDN, standardizing coverage across sites and speeding up new-unit go-lives.'},
+  {tag:'RESEARCH', nameZh:'科研 / 临床质量', nameEn:'Research / Clinical Quality', descZh:'Clinical Insights Manager支持回顾性分析；居家延伸监护相关研究已发表于同行评审期刊。', descEn:'Clinical Insights Manager supports retrospective analysis; home-extension monitoring research has been published in peer-reviewed journals.'},
+], 'vcard');
+
+buildCardGrid('app-grid-mindray', [
+  {nameZh:'报警管理', nameEn:'Alarm Management', descZh:'外部设备报警与监护仪报警统一呈现，精准/组合报警降低护士干扰', descEn:'External-device and monitor alarms shown together; precision/combined alarms reduce interruptions for nurses'},
+  {nameZh:'远程查看', nameEn:'Remote Viewing', descZh:'CMS Viewer（PC/平板）+ Mobile Viewer（手机）实现院内外/跨院区查看', descEn:'CMS Viewer (PC/tablet) + Mobile Viewer (phone) enable in/out-of-hospital and cross-campus viewing'},
+  {nameZh:'预警评分 EWS', nameEn:'Early Warning Score (EWS)', descZh:'监护仪/CMS内置EWS入口，用于普通病房与急诊病情恶化预警', descEn:'An EWS entry built into the monitor/CMS, used for deterioration alerts on general wards and in the ED'},
+  {nameZh:'移动护理', nameEn:'Mobile Nursing', descZh:'身份识别+移动终端支持床旁数据即时记录与查看', descEn:'ID verification plus mobile devices support instant bedside data entry and viewing'},
+  {nameZh:'多床监护', nameEn:'Multi-Bed Monitoring', descZh:'WorkStation单终端最多监护64名患者', descEn:'One WorkStation terminal can monitor up to 64 patients'},
+  {nameZh:'InfusionView', nameEn:'InfusionView', descZh:'监护仪与输注泵联动，同屏展示生命体征与输注数据', descEn:'Links the monitor and infusion pump, showing vitals and infusion data on one screen'},
+  {nameZh:'AnaeSight', nameEn:'AnaeSight', descZh:'连接麻醉机/监护仪/输注泵，静吸复合麻醉统一操作', descEn:'Connects the anesthesia machine / monitor / infusion pump for unified combined IV-inhalation anesthesia control'},
+  {nameZh:'SafeDose DERS', nameEn:'SafeDose DERS', descZh:'药物库软硬限值管理，降低输注用药差错风险', descEn:'Drug-library soft/hard dose-limit management, lowering infusion medication-error risk'},
+], 'icard');
+
+buildCardGrid('app-grid-philips', [
+  {nameZh:'报警管理与治理', nameEn:'Alarm Management &amp; Governance', descZh:'Event Notification向第三方系统过滤/路由/升级，CDAS分布式确认符合IEC 80001', descEn:'Event Notification filters/routes/escalates to third-party systems; CDAS distributed confirmation meets IEC 80001'},
+  {nameZh:'移动端操作', nameEn:'Mobile Actions', descZh:'Care Assist可直接确认告警、启停NIBP测量，而不仅是查看', descEn:'Care Assist can directly acknowledge alarms and start/stop NIBP — not just view'},
+  {nameZh:'预警评分 EWS', nameEn:'Early Warning Score (EWS)', descZh:'Guardian三层架构自动检测生命体征偏移并触发复测', descEn:"Guardian's three-tier architecture auto-detects vital-sign deviation and triggers a re-check"},
+  {nameZh:'多床监护', nameEn:'Multi-Bed Monitoring', descZh:'PIC iX单一网络最多支持1024张床位，覆盖急诊到转运全流程', descEn:'A single PIC iX network supports up to 1,024 beds, covering everything from ED to transport'},
+  {nameZh:'Visual Patient Avatar', nameEn:'Visual Patient Avatar', descZh:'生理参数转化为可视化人形图像，辅助快速识别异常（试点阶段）', descEn:'Renders physiological parameters as a visual human figure to help spot anomalies fast (pilot stage)'},
+  {nameZh:'Clinical Insights Manager', nameEn:'Clinical Insights Manager', descZh:'支持对历史监护数据进行回顾性分析，服务质量改进与科研', descEn:'Supports retrospective analysis of historical monitoring data for quality improvement and research'},
+  {nameZh:'ICCA 结构化文书', nameEn:'ICCA Structured Documentation', descZh:'IntelliSpace Critical Care and Anesthesia承载ICU/围术期结构化文书', descEn:'IntelliSpace Critical Care and Anesthesia carries structured ICU/perioperative documentation'},
+  {nameZh:'居家延伸监护', nameEn:'Home Extension Monitoring', descZh:'Guardian结合eTrAC支持术后患者出院后居家远程监护', descEn:'Guardian combined with eTrAC supports remote home monitoring for post-op patients after discharge'},
+], 'icard');
+
+buildCardGrid('deploy-grid-mindray', [
+  {nameZh:'部署模式', nameEn:'Deployment Mode', descZh:'本地化为主；eGateway可虚拟化(VMware)；CMS Viewer支持Citrix XenApp；支持跨院区企业级部署', descEn:"Mostly on-premise; eGateway can be virtualized (VMware); CMS Viewer supports Citrix XenApp; supports enterprise cross-campus deployment"},
+  {nameZh:'高可用与容灾', nameEn:'High Availability &amp; DR', descZh:'BeneVision DMS可配置HA/灾备+共享存储；eGateway支持48小时本地缓存回填，可双机冗余', descEn:'BeneVision DMS can be configured for HA/DR with shared storage; eGateway supports 48-hour local buffering and dual-node redundancy'},
+  {nameZh:'网络与安全', nameEn:'Network &amp; Security', descZh:'eGateway可加入Windows域集中管理；核心监护专网隔离，移动端/VPN等外围可控开放', descEn:'eGateway can join a Windows domain for centralized management; the core monitoring network is isolated, with mobile/VPN as a controlled perimeter'},
+  {nameZh:'软件升级与运维', nameEn:'Software Updates &amp; Ops', descZh:'官网披露较少，推断依托eGateway集中配置管理；具体升级策略与独立运维工具需官方渠道核实（待核实）', descEn:'Limited public disclosure; inferred to rely on centralized eGateway configuration management. Specific update strategy and any dedicated ops tooling need to be verified through official channels (to be verified)'},
+], 'icard');
+
+buildCardGrid('deploy-grid-philips', [
+  {nameZh:'部署模式', nameEn:'Deployment Mode', descZh:'虚拟化优先(VMware)；拥抱客户自有网络；Enterprise Link部署模型内置冗余', descEn:"Virtualization-first (VMware); embraces the customer's own network; the Enterprise Link deployment model has built-in redundancy"},
+  {nameZh:'高可用与容灾', nameEn:'High Availability &amp; DR', descZh:'中断时客户端自动切至Local Mode本地续航，EMR送数保持；定期归档+故障还原式灾备流程', descEn:'Clients auto-fail over to Local Mode during outages and keep sending data to the EMR; DR follows a periodic-archive-and-restore process'},
+  {nameZh:'网络与安全', nameEn:'Network &amp; Security', descZh:'默认BitLocker加密；NIST SP800-88介质销毁；VPN远程访问；MX850多层加密+RFID/NFC；CISA公开漏洞修复记录', descEn:'BitLocker encryption on by default; NIST SP 800-88 media sanitization; VPN for remote access; MX850 has layered encryption + RFID/NFC; a public CISA record of patched vulnerabilities'},
+  {nameZh:'软件升级与运维', nameEn:'Software Updates &amp; Ops', descZh:'远程设备运维管理方案；Customer Services Portal免费工单；IT/临床工程联合培训与架构规划会议', descEn:'A remote device-operations management offering; free ticketing via the Customer Services Portal; joint IT/clinical-engineering training and architecture-planning sessions'},
+], 'icard');
+
+/* ================= 04 WORKFLOW CAPABILITY LADDER (bilingual) ================= */
+(function(){
+  var LADDER_STEPS = [
+    {
+      n:1, titleZh:'入院 / 分诊接入', titleEn:'Admission / Triage Intake',
+      clinicalZh:'患者进入急诊或病房，启动身份识别与基础评估', clinicalEn:'Patient enters the ED or ward; identification and baseline assessment begin',
+      verdict:'tie', verdictLabelZh:'≈ 两者相当', verdictLabelEn:'≈ Comparable',
+      mindray:{textZh:'监护仪采集生命体征，患者身份识别与ADT信息下发经eGateway联动，结合腕带扫码', textEn:'The monitor captures vitals; patient ID and ADT delivery are linked via eGateway, combined with wristband scanning', lead:false},
+      philips:{textZh:'PIC iX官方明确将"急诊到转运"列为连续覆盖统一体，Guardian预警评分逻辑从入院环节即可启动', textEn:'PIC iX explicitly lists "ED to transport" as one continuous continuum of coverage; Guardian\'s warning-score logic can start right at admission', lead:false, badgeZh:'表述更明确', badgeEn:'More explicit'}
+    },
+    {
+      n:2, titleZh:'床旁设备汇聚', titleEn:'Bedside Device Aggregation',
+      clinicalZh:'呼吸机、麻醉机、输注泵等外部设备数据接入监护网络', clinicalEn:'Ventilator, anesthesia machine, infusion-pump and other external device data enters the monitoring network',
+      verdict:'tie', verdictLabelZh:'≈ 各有侧重', verdictLabelEn:'≈ Different emphasis',
+      mindray:{textZh:'BeneLink单模块最多4台设备，串口即插即用，最多24项数值进入监护仪集成窗口', textEn:"BeneLink handles up to 4 devices per module via plug-and-play serial ports, feeding up to 24 values into the monitor's integration window", lead:false, badgeZh:'更简单直接', badgeEn:'Simpler, more direct'},
+      philips:{textZh:'分两级：IntelliBridge Bedside床旁最多4台，Enterprise企业级最多8台，遵循IHE PCD细分规范', textEn:'Split into two tiers: IntelliBridge Bedside (up to 4 at point-of-care) and Enterprise (up to 8), following granular IHE PCD profiles', lead:false, badgeZh:'分级更精细', badgeEn:'More granular tiering'}
+    },
+    {
+      n:3, titleZh:'早期预警评分 EWS', titleEn:'Early Warning Score (EWS)',
+      clinicalZh:'系统持续评估生命体征偏移，识别病情恶化风险', clinicalEn:'The system continuously assesses vital-sign deviation to flag deterioration risk',
+      verdict:'blue', verdictLabelZh:'Philips 更突出', verdictLabelEn:'Philips more developed',
+      mindray:{textZh:'监护仪 / CMS 内置EWS入口，官网对具体算法与验证机制着墨较少', textEn:"An EWS entry is built into the monitor/CMS; the official site says relatively little about the specific algorithm or validation", lead:false},
+      philips:{textZh:'Guardian Solution三层架构，异常时自动触发复测降低误报；UHKC案例显示单床日均报警从28次降至3次', textEn:"Guardian Solution's three-tier architecture auto-triggers a re-check on anomalies to cut false alarms; the UHKC case shows alarms/bed/day falling from 28 to 3", lead:true, badgeZh:'有量化案例', badgeEn:'Has a quantified case study'}
+    },
+    {
+      n:4, titleZh:'统一报警与治理', titleEn:'Unified Alarm Governance',
+      clinicalZh:'多源报警去重、路由、升级、确认送达', clinicalEn:'De-duplicating, routing, escalating, and confirming delivery of multi-source alarms',
+      verdict:'blue', verdictLabelZh:'Philips 更突出', verdictLabelEn:'Philips more developed',
+      mindray:{textZh:'CMS内统一呈现，以符号前缀区分设备来源；湘雅医院专家评价"精准、组合报警"', textEn:'Unified within CMS, with a symbol prefix distinguishing the source device; Xiangya Hospital clinicians praised its "precise, combined alarms"', lead:false, badgeZh:'有真实临床好评', badgeEn:'Has real clinical praise'},
+      philips:{textZh:'Event Notification + CDAS分布式报警确认机制，明确符合IEC 80001标准', textEn:'Event Notification + CDAS distributed alarm-confirmation, explicitly compliant with IEC 80001', lead:true, badgeZh:'有合规标准佐证', badgeEn:'Backed by a compliance standard'}
+    },
+    {
+      n:5, titleZh:'移动端响应', titleEn:'Mobile Response',
+      clinicalZh:'护士 / 医生通过移动设备接收告警并采取行动', clinicalEn:'Nurses / physicians receive alarms and act on mobile devices',
+      verdict:'blue', verdictLabelZh:'Philips 明显更突出', verdictLabelEn:'Philips clearly more developed',
+      mindray:{textZh:'Mobile Viewer：多患者同屏查看、报警可视化提示，公开资料偏"查看"定位', textEn:'Mobile Viewer: multi-patient view, visualized alarm cues — public materials position it mostly as "view only"', lead:false},
+      philips:{textZh:'Care Assist：可直接确认告警、启停NIBP测量，不仅是查看', textEn:'Care Assist: can directly acknowledge alarms and start/stop NIBP — not just view', lead:true, badgeZh:'可"操作"而非只查看', badgeEn:'Can "act," not just view'}
+    },
+    {
+      n:6, titleZh:'围术期 / 转运衔接', titleEn:'Perioperative / Transport Handoff',
+      clinicalZh:'手术室内监护、麻醉管理、患者转运不中断', clinicalEn:'In-OR monitoring, anesthesia management, and uninterrupted patient transport',
+      verdict:'tie', verdictLabelZh:'≈ 各有独家', verdictLabelEn:'≈ Each has an exclusive',
+      mindray:{textZh:'N1模块兼作转运监护仪，实现"无缝转运"；AnaeSight联动麻醉机/监护仪/输注泵', textEn:'The N1 module doubles as a transport monitor for "seamless transfer"; AnaeSight links the anesthesia machine/monitor/infusion pump', lead:false, badgeZh:'AnaeSight独家命名', badgeEn:'AnaeSight is exclusively named'},
+      philips:{textZh:'IntelliVue X3双用途转运监护仪；ICCA承载围术期结构化文书记录', textEn:'IntelliVue X3 is a dual-purpose transport monitor; ICCA carries structured perioperative documentation', lead:false, badgeZh:'ICCA独家命名', badgeEn:'ICCA is exclusively named'}
+    },
+    {
+      n:7, titleZh:'重症监护与用药安全', titleEn:'Critical Care &amp; Medication Safety',
+      clinicalZh:'ICU内综合生命体征与药物治疗决策', clinicalEn:'Integrated vitals and medication decisions within the ICU',
+      verdict:'red', verdictLabelZh:'瑞智联 更突出', verdictLabelEn:'M-Connect more developed',
+      mindray:{textZh:'InfusionView监护仪与输注泵同屏联动；SafeDose DERS药物库软硬限值管理', textEn:'InfusionView links monitor and infusion pump on one screen; SafeDose DERS manages soft/hard dose limits from a drug library', lead:true, badgeZh:'产品命名更具体', badgeEn:'More specifically named products'},
+      philips:{textZh:'ICCA结构化文书打通设备数据，公开资料未见同等颗粒度的独立输注安全产品命名', textEn:'ICCA structured documentation connects device data, but public materials show no independently named infusion-safety product of comparable granularity', lead:false}
+    },
+    {
+      n:8, titleZh:'跨院区 / 区域网络部署', titleEn:'Cross-Campus / IDN Deployment',
+      clinicalZh:'多院区数据标准化、集中管理', clinicalEn:'Standardizing data and centralizing management across multiple sites',
+      verdict:'blue', verdictLabelZh:'Philips 明显更突出', verdictLabelEn:'Philips clearly more developed',
+      mindray:{textZh:'CMS Viewer / Mobile Viewer远程查看，专家院外指导，公开案例多为单体医院', textEn:'Remote viewing via CMS Viewer / Mobile Viewer with off-site expert guidance; public case studies are mostly single-hospital', lead:false},
+      philips:{textZh:'PIC iX明确定位"IDN级集中部署"；AdventHealth案例覆盖美国9州50余个院区的五年合作', textEn:'PIC iX is explicitly positioned for "IDN-scale centralized deployment"; the AdventHealth case is a five-year partnership spanning 50+ campuses across 9 US states', lead:true, badgeZh:'有大型集团案例', badgeEn:'Has a large health-system case'}
+    },
+    {
+      n:9, titleZh:'出院 / 居家延伸监护', titleEn:'Discharge / Home Extension Monitoring',
+      clinicalZh:'患者出院后的持续健康监测', clinicalEn:'Continued health monitoring after a patient is discharged',
+      verdict:'gold', verdictLabelZh:'Philips 独有能力', verdictLabelEn:'Philips-exclusive capability',
+      mindray:{gap:true, textZh:'公开资料中未见对应产品或能力', textEn:'No corresponding product or capability found in public materials'},
+      philips:{textZh:'Guardian结合eTrAC系统支持术后居家远程监护；护士NPS均分8.8、患者NPS均分9.2，有同行评审研究支持', textEn:'Guardian combined with eTrAC supports post-op home remote monitoring; a mean nurse NPS of 8.8 and patient NPS of 9.2, backed by peer-reviewed research', lead:true, exclusive:true, badgeZh:'★ 独有能力', badgeEn:'★ Exclusive'}
+    },
+    {
+      n:10, titleZh:'数据沉淀与科研分析', titleEn:'Data Archival &amp; Research Analytics',
+      clinicalZh:'历史数据回顾、质量改进、科研转化', clinicalEn:'Reviewing historical data for quality improvement and research translation',
+      verdict:'tie', verdictLabelZh:'≈ 各有侧重', verdictLabelEn:'≈ Different emphasis',
+      mindray:{textZh:'设备全息数据库，与腾讯联合发布"启元重症大模型"', textEn:'A device data repository; co-released the "Qiyuan" critical-care LLM with Tencent', lead:false, badgeZh:'AI叙事更前沿', badgeEn:'More cutting-edge AI narrative'},
+      philips:{textZh:'Clinical Insights Manager回顾性分析工具', textEn:'Clinical Insights Manager, a retrospective-analysis tool', lead:false, badgeZh:'工具更产品化', badgeEn:'A more productized tool'}
+    }
+  ];
+
+  function lel(tag, cls, html){
+    var e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(html !== undefined) e.innerHTML = html;
+    return e;
+  }
+
+  function buildLadderPanel(vendorLabel, data, vendorKind){
+    var cls = 'ladder-vpanel lvp-' + vendorKind;
+    if(data.gap){ cls += ' lvp-gap'; }
+    else if(data.exclusive){ cls += ' lvp-exclusive'; }
+    else if(data.lead){ cls += vendorKind === 'red' ? ' lvp-lead-red' : ' lvp-lead-blue'; }
+    else { cls += ' lvp-muted'; }
+    var panel = lel('div', cls);
+
+    var tag = lel('div', 'ladder-vp-tag');
+    tag.appendChild(lel('span', 'mono', vendorLabel));
+    if(data.badgeZh){
+      var badgeCls = 'ladder-vp-badge ' + (data.exclusive ? 'lb-gold' : (vendorKind === 'red' ? 'lb-red' : 'lb-blue'));
+      tag.appendChild(lel('span', badgeCls, bl(data.badgeZh, data.badgeEn)));
+    }
+    panel.appendChild(tag);
+    panel.appendChild(lel('p', data.gap ? 'lgap-text' : null, bl(data.textZh, data.textEn)));
+    return panel;
+  }
+
+  function buildLadderStep(s){
+    var step = lel('div', 'ladder-step reveal');
+    step.setAttribute('data-step', s.n);
+
+    var marker = lel('div', 'ladder-step-marker');
+    marker.appendChild(lel('div', 'ladder-step-dot mono', String(s.n)));
+    var titleRow = lel('div', 'ladder-step-title-row');
+    titleRow.appendChild(lel('h4', null, bl(s.titleZh, s.titleEn)));
+    titleRow.appendChild(lel('p', 'ladder-step-clinical', bl(s.clinicalZh, s.clinicalEn)));
+    marker.appendChild(titleRow);
+    step.appendChild(marker);
+
+    var vrow = lel('div', 'ladder-verdict-row');
+    vrow.appendChild(lel('span', 'ladder-verdict lv-' + s.verdict, bl(s.verdictLabelZh, s.verdictLabelEn)));
+    step.appendChild(vrow);
+
+    var crow = lel('div', 'ladder-compare-row');
+    crow.appendChild(buildLadderPanel('瑞智联 M-CONNECT', s.mindray, 'red'));
+    crow.appendChild(buildLadderPanel('PHILIPS CONNECTED CARE', s.philips, 'blue'));
+    step.appendChild(crow);
+
+    return step;
+  }
+
+  var journey = document.getElementById('ladder-journey');
+  if(journey){
+    LADDER_STEPS.forEach(function(s){ journey.appendChild(buildLadderStep(s)); });
+
+    var newReveals = journey.querySelectorAll('.reveal');
+    try {
+      var ladderIo = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); } });
+      }, {threshold:.12});
+      newReveals.forEach(function(el2){ ladderIo.observe(el2); });
+    } catch(e) {
+      newReveals.forEach(function(el2){ el2.classList.add('in'); });
+    }
+  }
+})();
+</script>
+</body>
+</html>
